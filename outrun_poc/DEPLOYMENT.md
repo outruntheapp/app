@@ -6,7 +6,7 @@ This is the **exact order** you should follow.
 
 ## 🧱 PHASE 1 — Supabase Setup
 
-### 1. Create Supabase Project
+### 1. Create Supabase Project ☑️
 
 * Choose region close to users
 * Save:
@@ -117,14 +117,14 @@ Nothing else will work without this.
 
 ## 🚀 PHASE 3 — Vercel Deployment
 
-### 9. Create Vercel Project
+### 9. Create Vercel Project ☑️
 
 * Import Git repo
 * Framework: Next.js
 
 ---
 
-### 10. Add Environment Variables (Vercel)
+### 10. Add Environment Variables (Vercel) ☑️
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://ndfgymfsszgqjauhyycv.supabase.co

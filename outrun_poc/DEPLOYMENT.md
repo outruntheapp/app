@@ -56,7 +56,7 @@ STRAVA_CLIENT_ID (need to still add)
 STRAVA_CLIENT_SECRET (need to still add)
 APP_BASE_URL
 ```
-
+* under Authentication/URL Configuration/Redirct URLs: http://outrun.co.za
 ---
 
 ### 5. Deploy Edge Functions
@@ -127,8 +127,8 @@ Nothing else will work without this.
 ### 10. Add Environment Variables (Vercel)
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_SUPABASE_URL=https://ndfgymfsszgqjauhyycv.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=ey...[fill in]
 NEXT_PUBLIC_APP_URL=https://outrun.app
 ```
 

@@ -2,30 +2,26 @@
     "name": "outrun-web",
     "version": "0.1.0",
     "private": true,
-  
     "scripts": {
-      "dev": "next dev",
-      "build": "next build",
-      "start": "next start",
-      "lint": "next lint"
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint",
+        "upload-routes": "node scripts/upload-routes.js"
     },
-  
     "dependencies": {
-      "next": "14.1.0",
-      "react": "18.2.0",
-      "react-dom": "18.2.0",
-  
-      "@mui/material": "^5.15.10",
-      "@mui/icons-material": "^5.15.10",
-      "@emotion/react": "^11.11.3",
-      "@emotion/styled": "^11.11.3",
-  
-      "@supabase/supabase-js": "^2.39.0"
+        "@emotion/react": "^11.11.3",
+        "@emotion/styled": "^11.11.3",
+        "@mui/icons-material": "^5.15.10",
+        "@mui/material": "^5.15.10",
+        "@supabase/supabase-js": "^2.39.0",
+        "next": "14.1.0",
+        "react": "18.2.0",
+        "react-dom": "18.2.0"
     },
-  
     "devDependencies": {
-      "eslint": "^8.56.0",
-      "eslint-config-next": "14.1.0"
+        "eslint": "^8.56.0",
+        "eslint-config-next": "14.1.0",
+        "xml2js": "^0.6.2"
     }
-  }
-  
+}

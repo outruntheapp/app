@@ -29,7 +29,7 @@ This guide walks you through deploying the SQL schema, Edge Functions, and Postg
 
 ## Step 1: Apply SQL Schema
 
-### Option A: Via Supabase Dashboard (Recommended for First Time)
+### Option A: Via Supabase Dashboard (Recommended for First Time) ☑️
 
 1. Go to your Supabase project dashboard
 2. Navigate to **SQL Editor**
@@ -72,7 +72,7 @@ cd supabase/migrations
 supabase db push
 ```
 
-## Step 2: Create Postgres Function for Route Matching
+## Step 2: Create Postgres Function for Route Matching ☑️
 
 1. Go to **SQL Editor** in Supabase Dashboard
 2. Open `supabase/migrations/match_activity_to_route.sql`
@@ -85,7 +85,7 @@ supabase db push
 
 ## Step 3: Deploy Edge Functions
 
-### Option A: Via Supabase Dashboard (Recommended for First Time)
+### Option A: Via Supabase Dashboard (Recommended for First Time) ☑️
 
 **⚠️ IMPORTANT:** When deploying via Dashboard, you must use the **standalone versions** which have all shared code inlined. The regular versions with `_shared/` imports will fail.
 
@@ -132,7 +132,7 @@ supabase functions deploy refresh-leaderboards
 
 **Note:** The shared modules (`_shared/`) will be automatically included when deploying via CLI.
 
-## Step 4: Configure Environment Variables
+## Step 4: Configure Environment Variables ☑️
 
 1. Go to **Project Settings** → **Edge Functions** → **Secrets**
 2. Add the following environment variables:
@@ -151,7 +151,7 @@ APP_BASE_URL=https://your-app-domain.com
 - `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` from your Strava app
 - `APP_BASE_URL` is your frontend URL (e.g., `https://outrun.app`)
 
-## Step 5: Set Up Cron Jobs
+## Step 5: Set Up Cron Jobs ☑️
 
 1. Go to **SQL Editor** in Supabase Dashboard
 2. Run the following SQL (replace `PROJECT_ID` with your actual project reference):
@@ -186,13 +186,13 @@ select cron.schedule(
 - `PROJECT_ID` with your Supabase project reference (e.g., `ndfgymfsszgqjauhyycv`)
 - `YOUR_SERVICE_ROLE_KEY` with your actual service role key
 
-## Step 6: Verify Deployment
+## Step 6: Verify Deployment 
 
-### 6.1 Check Functions
+### 6.1 Check Functions ☑️
 1. Go to **Edge Functions** in dashboard
 2. Verify all 5 functions are listed and deployed
 
-### 6.2 Check Database
+### 6.2 Check Database ☑️
 Run in SQL Editor:
 ```sql
 -- Check tables exist
@@ -224,7 +224,7 @@ curl -X POST https://PROJECT_ID.supabase.co/functions/v1/sync-strava-activities 
   -H "Content-Type: application/json"
 ```
 
-## Step 7: Create Initial Challenge
+## Step 7: Create Initial Challenge ☑️
 
 Before the app can work, you need at least one active challenge:
 
@@ -240,11 +240,59 @@ VALUES (
 
 ## Step 8: Upload GPX Routes
 
-You'll need to convert your GPX files to PostGIS LineString format and insert them:
+### Option A: Using the Upload Script (Recommended)
+
+The project includes a script to automatically convert GPX files to PostGIS format.
+
+**Directory Structure:**
+```
+routes/
+└── challenge_1/          # Challenge folder name
+    ├── stage-1.gpx
+    ├── stage-2.gpx
+    └── stage-3.gpx
+```
+
+**Install dependencies:**
+```bash
+npm install
+```
+
+**Generate SQL migration file:**
+```bash
+npm run upload-routes challenge_1 sql
+```
+
+This creates: `supabase/migrations/02_insert_routes_challenge_1.sql`
+
+Then run the SQL in Supabase SQL Editor.
+
+**Or upload directly to Supabase:**
+```bash
+# Set environment variables
+export SUPABASE_URL=https://your-project.supabase.co
+export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Upload
+npm run upload-routes challenge_1 upload
+```
+
+**List available challenges:**
+```bash
+npm run upload-routes
+```
+
+See `scripts/README.md` for detailed instructions.
+
+### Option B: Manual Conversion
+
+If you prefer to convert manually:
+
+1. Parse GPX file to extract coordinates
+2. Convert to WKT format: `LINESTRING(lon lat, lon lat, ...)`
+3. Insert via SQL:
 
 ```sql
--- Example: Insert a route for stage 1
--- Replace with your actual GPX coordinates converted to LineString
 INSERT INTO routes (challenge_id, stage_number, gpx_geo, buffer_meters, min_overlap_ratio)
 SELECT 
   id,
@@ -255,14 +303,7 @@ SELECT
 FROM challenges 
 WHERE is_active = true
 LIMIT 1;
-
--- Repeat for stages 2 and 3
 ```
-
-**Note:** Converting GPX to LineString requires:
-1. Parse GPX file to extract coordinates
-2. Convert to WKT (Well-Known Text) format: `LINESTRING(lon lat, lon lat, ...)`
-3. Use `ST_GeogFromText()` to create geography type
 
 ## Troubleshooting
 

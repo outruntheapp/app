@@ -53,7 +53,7 @@ Do NOT move logic to the client.
 ## What is already done
 
 * UI structure and components
-* Theme & branding
+* Theme & branding (Double check current app aligns with styling (background/colour/branding) described in README.md)
 * Header layout
 * Env setup
 * Project structure

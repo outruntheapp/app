@@ -134,11 +134,11 @@ Without refactoring core logic.
 
 ## Styling
 
-App Background: ./src/assets/splash.png
-Primary background colour: #C45A2A
-Secondary background colour: #2A2A2A
-Text colours: #F4F1EC and #0B0B0B
-Branded header: ./src/assets/header.png
+* App Background: ./src/assets/splash.png
+* Primary background colour: #C45A2A
+* Secondary background colour: #2A2A2A
+* Text colours: #F4F1EC and #0B0B0B
+* Branded header for pages: ./src/assets/header.png
 
 ---
 

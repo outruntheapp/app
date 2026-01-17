@@ -56,7 +56,7 @@ STRAVA_CLIENT_ID (need to still add)
 STRAVA_CLIENT_SECRET (need to still add)
 APP_BASE_URL
 ```
-* under Authentication/URL Configuration/Redirct URLs: http://outrun.co.za
+* under Authentication/URL Configuration/Redirct URLs: http://outrun.co.za and https://outrunapp.vercel.app
 ---
 
 ### 5. Deploy Edge Functions
@@ -96,7 +96,11 @@ select cron.schedule(
 * Authorization Callback Domain:
 
 ```
-https://outrun.app/auth/callback
+https://outrunapp.vercel.app/auth/callback
+
+LATER
+https://outrun.co.za/auth/callback
+
 ```
 
 * Scopes:
@@ -129,7 +133,7 @@ Nothing else will work without this.
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://ndfgymfsszgqjauhyycv.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=ey...[fill in]
-NEXT_PUBLIC_APP_URL=https://outrun.app
+NEXT_PUBLIC_APP_URL=https://outrunapp.vercel.app
 ```
 
 ---

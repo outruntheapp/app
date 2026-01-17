@@ -11,9 +11,10 @@ This is the **exact order** you should follow.
 * Choose region close to users
 * Save:
 
-  * Project URL
-  * Anon key
-  * Service role key
+  * Project URL: DB_URL
+  * Anon key: ANON_KEY
+  * Service role key: SERVICE_ROLE_KEY
+  * Domain URL: APP_BASE_URL
 
 ---
 
@@ -49,10 +50,10 @@ Run **in order**:
 In Supabase Dashboard → Functions → Environment Variables:
 
 ```txt
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-STRAVA_CLIENT_ID
-STRAVA_CLIENT_SECRET
+DB_URL
+SERVICE_ROLE_KEY
+STRAVA_CLIENT_ID (need to still add)
+STRAVA_CLIENT_SECRET (need to still add)
 APP_BASE_URL
 ```
 

@@ -3,7 +3,7 @@
 
 import { AppBar, Toolbar, Box } from "@mui/material";
 import Image from "next/image";
-import logo from "../../assets/name.png";
+import header from "../../assets/header.png";
 
 export default function AppHeader({ show = true }) {
   if (!show) return null;
@@ -13,22 +13,30 @@ export default function AppHeader({ show = true }) {
       position="static"
       elevation={0}
       sx={{
-        backgroundColor: "background.default",
+        backgroundColor: "transparent",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
       }}
     >
       <Toolbar
         sx={{
           justifyContent: "center",
-          minHeight: 72,
+          minHeight: { xs: 80, sm: 100 },
+          py: 1,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", width: "100%", maxWidth: "100%" }}>
           <Image
-            src={logo}
+            src={header}
             alt="OUTRUN"
-            height={28}
+            width={300}
+            height={80}
             priority
+            style={{
+              width: "100%",
+              maxWidth: "400px",
+              height: "auto",
+              objectFit: "contain",
+            }}
           />
         </Box>
       </Toolbar>

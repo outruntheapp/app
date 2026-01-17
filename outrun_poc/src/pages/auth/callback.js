@@ -11,10 +11,13 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const finalizeAuth = async () => {
       const code = router.query.code;
-      if (!code) return;
+      if (!code) {
+        router.replace("/");
+        return;
+      }
 
       try {
-        await fetch(
+        const response = await fetch(
           `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/auth-strava-callback`,
           {
             method: "POST",
@@ -26,13 +29,31 @@ export default function AuthCallbackPage() {
           }
         );
 
-        router.replace("/dashboard");
+        if (!response.ok) {
+          throw new Error("Auth callback failed");
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.userId) {
+          // Sign in the user using the email we created
+          // Note: This assumes the edge function created an auth user
+          // The email format is strava_{athlete_id}@strava.local
+          // For MVP, we'll redirect and let the dashboard handle auth state
+          // In production, you might want to return a session token from the edge function
+          router.replace("/dashboard");
+        } else {
+          throw new Error("Auth callback did not return success");
+        }
       } catch (err) {
         console.error("Auth callback failed", err);
+        router.replace("/?error=auth_failed");
       }
     };
 
-    finalizeAuth();
+    if (router.isReady) {
+      finalizeAuth();
+    }
   }, [router]);
 
   return null;

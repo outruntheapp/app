@@ -8,7 +8,7 @@ You should be able to tick these off **in order** and stop as soon as something 
 
 ## ✅ PHASE A — Infrastructure sanity
 
-### A1. Supabase project exists
+### A1. Supabase project exists ☑️
 
 Confirm in Supabase dashboard:
 
@@ -109,7 +109,7 @@ APP_BASE_URL
 
 ## ✅ PHASE C — Frontend wiring
 
-### C1. Vercel env variables set
+### C1. Vercel env variables set ☑️
 
 In Vercel → Project → Environment Variables:
 

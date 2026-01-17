@@ -107,10 +107,10 @@ src/
 
 ## MVP Scope Constraints (Intentional)
 
-* One active challenge at a time
+* One active challenge at a time (but structure to easily do multiple in the future)
 * No payments
 * No notifications
-* No manual activity approval
+* No manual activity approval 
 * No activity-level edits
 * Admins may only exclude participants
 
@@ -129,6 +129,18 @@ This architecture cleanly supports future additions:
 * Historical challenges
 
 Without refactoring core logic.
+
+---
+
+## Styling
+
+App Background: ./src/assets/splash.png
+Primary background colour: #C45A2A
+Secondary background colour: #2A2A2A
+Text colours: #F4F1EC and #0B0B0B
+Branded header: ./src/assets/header.png
+
+---
 
 # What Is STILL Outstanding (Final Truth List)
 

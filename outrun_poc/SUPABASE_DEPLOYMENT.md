@@ -1,7 +1,7 @@
 # Supabase Deployment Guide
 
 This guide walks you through deploying the SQL schema, Edge Functions, and Postgres functions to your Supabase project.
-
+ 
 ## Prerequisites
 
 1. **Supabase Project Created**
@@ -85,32 +85,36 @@ supabase db push
 
 ## Step 3: Deploy Edge Functions
 
-### Option A: Via Supabase Dashboard
+### Option A: Via Supabase Dashboard (Recommended for First Time)
+
+**⚠️ IMPORTANT:** When deploying via Dashboard, you must use the **standalone versions** which have all shared code inlined. The regular versions with `_shared/` imports will fail.
 
 1. Go to **Edge Functions** in your Supabase dashboard
 2. For each function, click **Create Function** and paste the code:
 
-#### 3.1 Shared Modules (Deploy First)
-
-You'll need to deploy shared modules. In Supabase, shared code is typically included in each function. However, for cleaner organization:
-
-**Create these files in Supabase Dashboard → Edge Functions:**
+**Use files from `supabase/functions/standalone/` directory:**
 
 1. **auth-strava-callback**
-   - Copy from `supabase/functions/auth-strava-callback/index.ts`
-   - Include shared imports (they'll be resolved automatically)
+   - Copy **entire contents** from `supabase/functions/standalone/auth-strava-callback.ts`
+   - Function name: `auth-strava-callback`
 
 2. **sync-strava-activities**
-   - Copy from `supabase/functions/sync-strava-activities/index.ts`
+   - Copy **entire contents** from `supabase/functions/standalone/sync-strava-activities.ts`
+   - Function name: `sync-strava-activities`
 
 3. **process-activities**
-   - Copy from `supabase/functions/process-activities/index.ts`
+   - Copy **entire contents** from `supabase/functions/standalone/process-activities.ts`
+   - Function name: `process-activities`
 
 4. **admin-exclude-user**
-   - Copy from `supabase/functions/admin-exclude-user/index.ts`
+   - Copy **entire contents** from `supabase/functions/standalone/admin-exclude-user.ts`
+   - Function name: `admin-exclude-user`
 
 5. **refresh-leaderboards**
-   - Copy from `supabase/functions/refresh-leaderboards/index.ts`
+   - Copy **entire contents** from `supabase/functions/standalone/refresh-leaderboards.ts`
+   - Function name: `refresh-leaderboards`
+
+**Why standalone?** The Dashboard doesn't automatically bundle the `_shared/` directory. The standalone versions include all shared code inline, making them ready to deploy.
 
 ### Option B: Via Supabase CLI (Recommended)
 

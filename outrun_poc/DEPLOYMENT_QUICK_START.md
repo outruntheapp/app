@@ -6,7 +6,7 @@
 
 ## 📋 Step 2: Deploy to Supabase
 
-### 2.1 Database Schema
+### 2.1 Database Schema ☑️
 **Option A: Use consolidated file (Easiest)**
 1. Go to Supabase Dashboard → SQL Editor
 2. Open `supabase/migrations/01_initial_schema.sql`
@@ -21,7 +21,7 @@
 2. Open `supabase/migrations/match_activity_to_route.sql`
 3. Copy and paste, then **Run**
 
-### 2.3 Edge Functions
+### 2.3 Edge Functions ☑️
 
 **If you have Supabase CLI:**
 ```bash
@@ -46,7 +46,7 @@ supabase functions deploy refresh-leaderboards
 **If using Supabase Dashboard:**
 - See detailed instructions in `SUPABASE_DEPLOYMENT.md` Step 3
 
-### 2.4 Environment Variables
+### 2.4 Environment Variables ☑️
 Go to **Project Settings** → **Edge Functions** → **Secrets** and add:
 ```
 DB_URL=https://YOUR_PROJECT.supabase.co
@@ -56,7 +56,7 @@ STRAVA_CLIENT_SECRET=your-strava-client-secret
 APP_BASE_URL=https://your-app-domain.com
 ```
 
-### 2.5 Cron Jobs
+### 2.5 Cron Jobs ☑️
 Run in SQL Editor (replace `PROJECT_ID` and `SERVICE_ROLE_KEY`):
 ```sql
 -- Sync Strava activities every 30 minutes
@@ -84,7 +84,7 @@ select cron.schedule(
 );
 ```
 
-### 2.6 Initial Data
+### 2.6 Initial Data ☑️
 Create a challenge:
 ```sql
 INSERT INTO challenges (name, starts_at, ends_at, is_active)

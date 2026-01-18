@@ -16,7 +16,7 @@ const OUTRUN_WHITE = "#F4F1EC";
 const OUTRUN_BLACK = "#0B0B0B";
 const OUTRUN_CHARCOAL = "#2A2A2A";
 const OUTRUN_TEXT_PRIMARY = "#C45A2A";
-const OUTRUN_TEXT_SECONDARY = "#4F6F52";
+const OUTRUN_TEXT_SECONDARY = "#F4F1EC";
 
 export const theme = createTheme({
   palette: {

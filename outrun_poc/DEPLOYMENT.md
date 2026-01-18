@@ -52,8 +52,8 @@ In Supabase Dashboard → Functions → Environment Variables:
 ```txt
 DB_URL
 SERVICE_ROLE_KEY
-STRAVA_CLIENT_ID (need to still add)
-STRAVA_CLIENT_SECRET (need to still add)
+STRAVA_CLIENT_ID
+STRAVA_CLIENT_SECRET
 APP_BASE_URL
 ```
 * under Authentication/URL Configuration/Redirct URLs: http://outrun.co.za
@@ -96,7 +96,11 @@ select cron.schedule(
 * Authorization Callback Domain:
 
 ```
-https://outrun.app/auth/callback
+https://outrunapp.vercel.app/auth/callback
+
+LATER
+https://outrun.co.za/auth/callback
+
 ```
 
 * Scopes:

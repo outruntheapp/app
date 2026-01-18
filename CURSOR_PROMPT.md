@@ -1,4 +1,4 @@
-# 🚀 Cursor Project Context Prompt — OUTRUN POC
+# 🚀 Cursor Project Context Prompt — OUTRUN POC (FIRST STEP)
 
 You are working on a structured MVP/POC called **OUTRUN**, a virtual running challenge web application that integrates with Strava to automatically validate runner activities against predefined GPX routes and compute deterministic leaderboards.
 
@@ -9,6 +9,7 @@ All technical specifications are documented in:
 * `/outrun_poc/SQL_SCHEMA.md` → Supabase schema, views, RLS, audit structure
 * `/outrun_poc/EDGE_FUNCTIONS.md` → Edge Functions, responsibilities, flow
 * `/outrun_poc/DEPLOYMENT.md` → Checklist of completed vs pending items
+* We still need .gitignore and .env.local for the cloned repo
 
 You must strictly follow those documents as the source of truth unless specifically instructed otherwise.
 
@@ -24,7 +25,7 @@ You must strictly follow those documents as the source of truth unless specifica
 * Leaderboards are fully derived from validated stage results
 * No manual activity approval exists
 * Admins can only exclude participants, delete entries and export winners
-* Only one active challenge exists at this time (must be able to handle in future)
+* Only one active challenge exists at this time (must be able to handle multiple in future)
 * Challenge duration = 21 days, 3 stages
 
 ---
@@ -93,7 +94,7 @@ Using the docs as the blueprint, you must:
 
 ---
 
-## Constraints
+## Constraints (unless explicitly changed in future)
 
 * Never add features outside SQL_SCHEMA.md and EDGE_FUNCTIONS.md
 * Never modify existing frontend logic unless required for integration

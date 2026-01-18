@@ -2,10 +2,9 @@
 // Purpose: Landing / login page with OUTRUN branding
 
 import { useState, useEffect } from "react";
-import { Container, Stack, Typography, Button, Alert, Box } from "@mui/material";
+import { Container, Stack, Typography, Button, Alert, Box, Chip } from "@mui/material";
 import StravaConnectButton from "../components/auth/StravaConnectButton";
 import Image from "next/image";
-import AppHeader from "../components/common/AppHeader";
 import CountdownTimer from "../components/common/CountdownTimer";
 import RulesDialog from "../components/common/RulesDialog";
 import { fetchActiveChallenge } from "../services/challengeService";
@@ -61,24 +60,71 @@ export default function LandingPage() {
   };
 
   return (
-    <>
-      <AppHeader />
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      {/* Demo Mode Toggle - Always visible in top right */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          zIndex: 1000,
+        }}
+      >
+        <Chip
+          label={demoMode ? "Demo Mode ON" : "Demo Mode OFF"}
+          color={demoMode ? "primary" : "default"}
+          onClick={handleToggleDemoMode}
+          clickable
+          size="small"
+        />
+      </Box>
 
-      <Container maxWidth="xs">
-        <Stack spacing={3} mt={10} alignItems="center">
-          <Image
-            src={name}
-            alt="OUTRUN_name"
-            width={220}
-            priority
-          />
-          <Image
-            src={logo}
-            alt="OUTRUN_logo"
-            width={220}
-            priority
-            style={{ marginTop: 0 }}
-          />
+      <Container maxWidth="xs" sx={{ py: 4 }}>
+        <Stack spacing={3} alignItems="center">
+          {/* Name and Logo - directly beneath each other with no extra spacing */}
+          <Box 
+            sx={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "center",
+              gap: 0,
+              "& > span": {
+                display: "block !important",
+                margin: "0 !important",
+                padding: "0 !important",
+                lineHeight: 0,
+              },
+              "& > span > img": {
+                display: "block !important",
+                margin: "0 !important",
+                padding: "0 !important",
+              }
+            }}
+          >
+            <Image
+              src={name}
+              alt="OUTRUN_name"
+              width={220}
+              priority
+            />
+            <Image
+              src={logo}
+              alt="OUTRUN_logo"
+              width={220}
+              priority
+            />
+          </Box>
 
           <Typography variant="body2" align="center">
             Premium Virtual Running Challenge
@@ -114,18 +160,6 @@ export default function LandingPage() {
                 <StravaConnectButton />
               </Box>
             )}
-
-            {/* Demo mode toggle for development */}
-            {process.env.NODE_ENV === "development" && (
-              <Button
-                variant="text"
-                size="small"
-                onClick={handleToggleDemoMode}
-                sx={{ mt: 2 }}
-              >
-                {demoMode ? "Disable Demo Mode" : "Enable Demo Mode"}
-              </Button>
-            )}
           </Stack>
         </Stack>
       </Container>
@@ -135,6 +169,6 @@ export default function LandingPage() {
         onClose={() => setRulesOpen(false)}
         challenge={challenge}
       />
-    </>
+    </Box>
   );
 }

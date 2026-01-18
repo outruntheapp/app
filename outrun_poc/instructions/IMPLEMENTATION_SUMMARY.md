@@ -1,6 +1,6 @@
 # Implementation Summary
 
-This document summarizes what has been implemented according to the specifications in `CURSOR_PROMPT.md`, `SQL_SCHEMA.md`, and `EDGE_FUNCTIONS.md`.
+This document summarizes what has been implemented according to the specifications in `../CURSOR_PROMPT.md`, `SQL_SCHEMA.md`, and `EDGE_FUNCTIONS.md`.
 
 ## ✅ Completed Implementation
 

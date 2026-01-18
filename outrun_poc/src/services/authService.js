@@ -2,11 +2,19 @@
 // Purpose: Handle Strava OAuth and session state
 
 import { logInfo, logError } from "../utils/logger";
+import { isDemoMode } from "../utils/demoMode";
 
 const STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize";
 
 export async function connectStrava() {
   try {
+    // Check if demo mode is enabled
+    if (isDemoMode()) {
+      logInfo("Demo mode enabled - skipping Strava OAuth");
+      alert("Demo mode is enabled. Strava connection is disabled in demo mode.");
+      return;
+    }
+
     logInfo("Starting Strava OAuth");
 
     // Get client ID from environment (public, safe to expose)

@@ -15,6 +15,8 @@ export default function AppHeader({ show = true }) {
       sx={{
         backgroundColor: "transparent",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
+        width: "100%",
+        maxWidth: "100%",
       }}
     >
       <Toolbar
@@ -22,9 +24,20 @@ export default function AppHeader({ show = true }) {
           justifyContent: "center",
           minHeight: { xs: 80, sm: 100 },
           py: 1,
+          width: "100%",
+          maxWidth: "100%",
+          px: 0,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", width: "100%", maxWidth: "100%" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            maxWidth: "100%",
+          }}
+        >
           <Image
             src={header}
             alt="OUTRUN"

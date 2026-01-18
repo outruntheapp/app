@@ -49,7 +49,18 @@ async function writeAuditLog({
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 
+// CORS headers
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   try {
     const { code } = await req.json();
 
@@ -151,13 +162,19 @@ serve(async (req) => {
     logInfo("Strava OAuth callback completed", { userId });
 
     return new Response(JSON.stringify({ success: true, userId }), {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
     });
   } catch (err) {
     logError("OAuth callback failed", err);
     return new Response(JSON.stringify({ error: "OAuth error" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
     });
   }
 });

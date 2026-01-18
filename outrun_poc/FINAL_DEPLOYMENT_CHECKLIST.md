@@ -43,7 +43,10 @@ Go to **Strava Developer Dashboard**: https://www.strava.com/settings/api
 
 **Authorization Callback Domain:**
 ```
-https://outrun.app/auth/callback
+https://outrunapp.vercel.app/auth/callback
+
+LATER
+https://outrun.co.za/auth/callback
 ```
 
 **Important:**
@@ -61,8 +64,8 @@ read,activity:read
 
 The callback URL must match in **3 places**:
 
-1. **Vercel**: `NEXT_PUBLIC_APP_URL` = `https://outrun.app`
-2. **Strava**: Authorization Callback Domain = `https://outrun.app/auth/callback`
+1. **Vercel**: `NEXT_PUBLIC_APP_URL` = `https://outrunapp.vercel.app` LATER `https://outrun.co.za`
+2. **Strava**: Authorization Callback Domain = `https://outrunapp.vercel.app/auth/callback` LATER `https://outrun.co.za/auth/callback`
 3. **Code**: `authService.js` constructs: `${NEXT_PUBLIC_APP_URL}/auth/callback`
 
 All three must resolve to the same URL!
@@ -90,7 +93,7 @@ You'll need to convert GPX files to PostGIS LineString format. See `SUPABASE_DEP
 
 Once everything is configured:
 
-1. **Visit your app**: `https://outrun.app`
+1. **Visit your app**: `https://outrunapp.vercel.app`
    - Should load without errors
    - Should show "Connect with Strava" button
 

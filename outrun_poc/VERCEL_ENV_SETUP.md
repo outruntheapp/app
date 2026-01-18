@@ -14,7 +14,7 @@
    |--------------|---------------|-------|
    | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxxxx.supabase.co` | Your Supabase project URL |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGc...` | Found in Supabase Settings → API |
-   | `NEXT_PUBLIC_APP_URL` | `https://outrun.app` | Your Vercel deployment URL |
+   | `NEXT_PUBLIC_APP_URL` | `https://outrunapp.vercel.app` | Your Vercel deployment URL |
    | `NEXT_PUBLIC_STRAVA_CLIENT_ID` | `12345` | From Strava Developer Dashboard |
 
 3. **Select Environments**

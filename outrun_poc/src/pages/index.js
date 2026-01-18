@@ -10,12 +10,15 @@
 import { Container, Stack, Typography } from "@mui/material";
 import StravaConnectButton from "../components/auth/StravaConnectButton";
 import Image from "next/image";
+import AppHeader from "../components/common/AppHeader";
 import name from "../assets/name.png";
 import logo from "../assets/logo.png";
 
 export default function LandingPage() {
   return (
     <>
+      <AppHeader />
+
       <Container maxWidth="xs">
         <Stack spacing={4} mt={10} alignItems="center">
           <Image

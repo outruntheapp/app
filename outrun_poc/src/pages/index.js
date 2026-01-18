@@ -70,6 +70,7 @@ export default function LandingPage() {
         height: "100vh",
         overflow: "hidden",
         position: "relative",
+        pb: 6,
       }}
     >
       {/* Demo Mode Toggle - Always visible in top right */}
@@ -90,7 +91,7 @@ export default function LandingPage() {
         />
       </Box>
 
-      <Container maxWidth="xs" sx={{ py: 4 }}>
+      <Container maxWidth="xs" sx={{ py: 6 }}>
         <Stack spacing={3} alignItems="center">
           {/* Name and Logo - directly beneath each other with no extra spacing */}
           <Box 

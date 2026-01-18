@@ -73,7 +73,12 @@ export async function joinActiveChallenge() {
     } = await supabase.auth.getUser();
 
     if (!authUser) {
-      throw new Error("User must be authenticated to join challenge");
+      // User not authenticated - they need to connect Strava first
+      return { 
+        success: false, 
+        requiresAuth: true,
+        message: "Please connect Strava first to join the challenge" 
+      };
     }
 
     const challenge = await fetchActiveChallenge();

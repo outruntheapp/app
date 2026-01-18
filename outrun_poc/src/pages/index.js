@@ -53,6 +53,9 @@ export default function LandingPage() {
         await loadData();
         // Show success message
         alert("Successfully joined the challenge! You can now connect Strava.");
+      } else if (result.requiresAuth) {
+        // User needs to authenticate first
+        alert("Please connect Strava first to join the challenge.");
       }
     } catch (err) {
       console.error("Failed to join challenge", err);

@@ -62,3 +62,50 @@ export async function isUserParticipant(userId, challengeId) {
     return false;
   }
 }
+
+/**
+ * Join the active challenge (create participant record)
+ */
+export async function joinActiveChallenge() {
+  try {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+
+    if (!authUser) {
+      throw new Error("User must be authenticated to join challenge");
+    }
+
+    const challenge = await fetchActiveChallenge();
+    if (!challenge) {
+      throw new Error("No active challenge found");
+    }
+
+    // Check if already a participant
+    const existing = await isCurrentUserParticipant();
+    if (existing) {
+      return { success: true, message: "Already a participant" };
+    }
+
+    // Create participant record
+    const { data, error } = await supabase
+      .from("participants")
+      .insert({
+        user_id: authUser.id,
+        challenge_id: challenge.id,
+        excluded: false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logError("Failed to join challenge", error);
+      throw error;
+    }
+
+    return { success: true, participant: data };
+  } catch (err) {
+    logError("Failed to join challenge", err);
+    throw err;
+  }
+}

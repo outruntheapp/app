@@ -9,7 +9,7 @@ import CountdownTimer from "../components/common/CountdownTimer";
 import RulesDialog from "../components/common/RulesDialog";
 import { fetchActiveChallenge } from "../services/challengeService";
 import { isCurrentUserParticipant } from "../services/participantService";
-import { isDemoMode, enableDemoMode, disableDemoMode } from "../utils/demoMode";
+import { isDemoMode, disableDemoMode } from "../utils/demoMode";
 import name from "../assets/name.png";
 import logo from "../assets/logo.png";
 
@@ -41,22 +41,41 @@ export default function LandingPage() {
     }
   };
 
-  const handleJoinChallenge = () => {
-    // TODO: Navigate to ticket purchase page
-    // For now, just show an alert
-    alert("Ticket purchase page coming soon!");
+  const handleJoinChallenge = async () => {
+    try {
+      // For now, bypass ticket purchase and directly join challenge
+      // TODO: In future, add ticket purchase flow here
+      const { joinActiveChallenge } = await import("../services/participantService");
+      const result = await joinActiveChallenge();
+      
+      if (result.success) {
+        // Reload to refresh participant status
+        await loadData();
+        // Show success message
+        alert("Successfully joined the challenge! You can now connect Strava.");
+      }
+    } catch (err) {
+      console.error("Failed to join challenge", err);
+      alert("Failed to join challenge. Please try again.");
+    }
   };
 
-  const handleToggleDemoMode = () => {
+  const handleToggleDemoMode = async () => {
     if (demoMode) {
       disableDemoMode();
       setDemoMode(false);
+      window.location.reload();
     } else {
-      enableDemoMode();
-      setDemoMode(true);
+      const { enableDemoMode } = await import("../utils/demoMode");
+      const result = await enableDemoMode();
+      if (result.success) {
+        setDemoMode(true);
+        // Reload to apply demo mode and initialize demo data
+        window.location.reload();
+      } else {
+        alert("Failed to enable demo mode. Check console for details.");
+      }
     }
-    // Reload to apply demo mode
-    window.location.reload();
   };
 
   return (

@@ -1,6 +1,9 @@
 // src/utils/demoMode.js
 // Purpose: Demo mode utilities to bypass Strava auth for development/testing
 
+import { DEMO_USER_ID, DEMO_USER } from "../../demo/demoData";
+import { initializeDemoData } from "../../demo/demoService";
+
 const DEMO_MODE_KEY = "outrun_demo_mode";
 const DEMO_USER_KEY = "outrun_demo_user";
 
@@ -13,20 +16,26 @@ export function isDemoMode() {
 }
 
 /**
- * Enable demo mode
+ * Enable demo mode and initialize demo data
  */
-export function enableDemoMode() {
+export async function enableDemoMode() {
   if (typeof window === "undefined") return;
-  localStorage.setItem(DEMO_MODE_KEY, "true");
   
-  // Create a demo user object
-  const demoUser = {
-    id: "demo-user-id",
-    full_name: "Demo Runner",
-    strava_athlete_id: null,
-    is_demo: true,
-  };
-  localStorage.setItem(DEMO_USER_KEY, JSON.stringify(demoUser));
+  try {
+    localStorage.setItem(DEMO_MODE_KEY, "true");
+    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(DEMO_USER));
+    
+    // Initialize demo data in Supabase
+    await initializeDemoData();
+    
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to enable demo mode", err);
+    // Still set localStorage so UI shows demo mode is on
+    localStorage.setItem(DEMO_MODE_KEY, "true");
+    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(DEMO_USER));
+    return { success: false, error: err };
+  }
 }
 
 /**
@@ -48,6 +57,13 @@ export function getDemoUser() {
   try {
     return JSON.parse(demoUserStr);
   } catch {
-    return null;
+    return DEMO_USER; // Fallback to default demo user
   }
+}
+
+/**
+ * Get demo user ID
+ */
+export function getDemoUserId() {
+  return DEMO_USER_ID;
 }

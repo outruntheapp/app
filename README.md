@@ -249,7 +249,12 @@ Without refactoring core logic.
 ### Landing Page Improvements
 - Fixed-height, centered layout (no scrolling)
 - Countdown timer for challenge start date
-- "Join Challenge" and "Rules" buttons
+- "Join Challenge" button reveals email input field
+- Email validation and Strava connection check
+- "ENTER" button for users with existing Strava connection
+- "Connect Strava" button for new users
+- Email stored in `users.email` field during OAuth flow
+- "Rules" button
 - Participant validation before Strava connection
 - Removed AppHeader for cleaner landing experience
 - Logo positioned directly beneath name (no extra spacing)
@@ -268,6 +273,7 @@ Without refactoring core logic.
 - `RouteMap`: Displays route maps with Google Maps embed
 - `participantService`: Validates user participation status
 - `routeService`: Fetches route data from Supabase
+- `authService`: Enhanced with email-based Strava connection checking
 - `demoMode` utility: Manages demo mode state
 
 ### Documentation

@@ -46,11 +46,30 @@ This document provides a visual roadmap of the OUTRUN application flow, user jou
          │ User clicks "Join Challenge"
          ▼
 ┌─────────────────┐
-│ Strava Connect  │
-│     Button      │
+│  Email Input    │
+│     Field       │
 └────────┬────────┘
          │
-         │ User clicks "Connect Strava"
+         │ User enters email & clicks "Continue"
+         ▼
+┌─────────────────┐
+│ Check Strava    │
+│  Connection     │
+│   by Email      │
+└────────┬────────┘
+         │
+         ├─── Has Strava? ───┐
+         │                   │
+         ▼                   ▼
+┌─────────────────┐  ┌─────────────────┐
+│   ENTER Button  │  │ Connect Strava  │
+│                 │  │     Button      │
+└────────┬────────┘  └────────┬────────┘
+         │                    │
+         │                    │ User clicks "Connect Strava"
+         │                    ▼
+         │
+         │ User clicks "ENTER"
          ▼
 ┌─────────────────┐      ┌─────────────────┐
 │  Strava OAuth   │─────▶│  OAuth Callback  │
@@ -119,8 +138,9 @@ This document provides a visual roadmap of the OUTRUN application flow, user jou
 │                    Strava OAuth Flow                         │
 └──────────────────────────────────────────────────────────────┘
 
-User clicks "Connect Strava"
+User clicks "Connect Strava" (or "ENTER" if already connected)
          │
+         │ Email stored in localStorage
          ▼
 ┌────────────────────┐
 │ Redirect to Strava │
@@ -137,6 +157,7 @@ User clicks "Connect Strava"
 │ code=XXX           │
 └─────────┬──────────┘
           │
+          │ Read email from localStorage
           ▼
 ┌─────────────────────────────────────────┐
 │  Edge Function: auth-strava-callback   │
@@ -144,13 +165,16 @@ User clicks "Connect Strava"
 │  1. Exchange code for tokens            │
 │  2. Fetch athlete data                  │
 │  3. Create/update Supabase auth user    │
+│     (email: strava_{id}@strava.local)  │
 │  4. Create/update users table record   │
+│     (email: user-provided email)       │
 │  5. Store Strava tokens                 │
 │  6. Create participant record          │
 │  7. Write audit log                     │
 └─────────┬───────────────────────────────┘
           │
           │ Returns success
+          │ Clear email from localStorage
           ▼
 ┌────────────────────┐
 │ Redirect to        │
@@ -225,13 +249,19 @@ User clicks "Connect Strava"
 - **Purpose**: Entry point, authentication
 - **Features**:
   - Challenge countdown timer
-  - "Join Challenge" button (reveals Strava button)
-    - User enters email
-    - FUTURE ADDITION: Enter code from ticket 
-    - reveals Strava button
+  - "Join Challenge" button
+    - Clicking reveals email input field
+    - User enters email (validated for format)
+    - System checks if user has Strava connected by email
+    - FUTURE ADDITION: Enter code from ticket (bookmarked for future)
   - "Connect Strava" button 
-    - only first time, use email entered on "Join Challenge" for Strava Auth
-    - if user already connected Strava, show "ENTER"
+    - Shown if user doesn't have Strava connected
+    - Uses email entered on "Join Challenge" for Strava Auth
+    - Email stored in `users.email` field
+  - "ENTER" button
+    - Shown if user already has Strava connected (by email check)
+    - Checks authentication status
+    - Redirects to dashboard (authenticated) or dashboard handles auth state
   - Demo mode toggle
   - Rules dialog
 - **No navigation header**

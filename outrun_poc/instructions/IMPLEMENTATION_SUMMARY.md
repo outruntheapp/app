@@ -64,7 +64,11 @@ All edge functions have been implemented in `supabase/functions/`:
 ### 4. Frontend Updates
 
 #### Pages
-- **`src/pages/index.js`**: Landing/login page with fixed-height centered layout, demo mode toggle
+- **`src/pages/index.js`**: 
+  - Landing/login page with fixed-height centered layout, demo mode toggle
+  - Email input field appears when "Join Challenge" is clicked
+  - Strava connection check by email
+  - Conditional "ENTER" or "Connect Strava" button display
 - **`src/pages/dashboard.js`**: Runner dashboard with summary view (user info, stage progress, rank overview, CTA to leaderboard)
 - **`src/pages/leaderboard.js`**: Full leaderboard page with overall and per-stage views
 - **`src/pages/routes.js`**: New routes page displaying GPX maps for each challenge stage
@@ -74,12 +78,22 @@ All edge functions have been implemented in `supabase/functions/`:
 - **`src/components/common/AppHeader.js`**: Full-width header with navigation (Dashboard, Routes, Leaderboard), mobile responsive
 - **`src/components/common/CountdownTimer.js`**: Displays time until challenge starts
 - **`src/components/common/RulesDialog.js`**: Shows challenge rules and information
+- **`src/components/auth/StravaConnectButton.js`**: 
+  - Enhanced to accept `email` and `hasStrava` props
+  - Shows "ENTER" button for users with existing Strava connection
+  - Shows "Connect with Strava" button for new users
 - **`src/components/routes/RouteMap.js`**: Displays route maps with Google Maps embed support
 
 #### Services
-- **`src/services/authService.js`**: Updated to use direct Strava OAuth flow instead of Supabase's built-in provider (Strava is not a built-in provider)
+- **`src/services/authService.js`**: 
+  - Updated to use direct Strava OAuth flow instead of Supabase's built-in provider (Strava is not a built-in provider)
+  - Added `checkStravaConnectionByEmail()` to check if user has Strava connected by email
+  - Updated `connectStrava()` to accept and store email in localStorage
+  - Added email storage helpers (`getStoredEmail()`, `clearStoredEmail()`)
 - **`src/services/routeService.js`**: Fetches route data from Supabase routes table
-- **`src/pages/auth/callback.js`**: Enhanced error handling and response validation
+- **`src/pages/auth/callback.js`**: 
+  - Enhanced error handling and response validation
+  - Reads email from localStorage and passes to edge function
 
 ## 🔧 Environment Variables Required
 
@@ -169,7 +183,11 @@ Invalid activities are silently ignored (marked as processed but no error thrown
 - `IMPLEMENTATION_SUMMARY.md`
 
 ### Modified
-- `src/services/authService.js` (updated to direct Strava OAuth)
-- `src/pages/auth/callback.js` (enhanced error handling)
+- `src/services/authService.js` (updated to direct Strava OAuth, added email connection check)
+- `src/pages/auth/callback.js` (enhanced error handling, email passing to edge function)
 - `src/components/common/AppHeader.js` (full-width header with navigation)
+- `src/components/auth/StravaConnectButton.js` (added ENTER button logic, email prop support)
+- `src/pages/index.js` (added email input, connection check, conditional button display)
 - `src/pages/dashboard.js` (added leaderboard CTA)
+- `supabase/functions/auth-strava-callback/index.ts` (accepts and stores userEmail in users.email)
+- `supabase/functions/standalone/auth-strava-callback.ts` (accepts and stores userEmail in users.email)

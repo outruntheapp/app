@@ -19,6 +19,7 @@ export default function LandingPage() {
   const [rulesOpen, setRulesOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
+  const [showStravaButton, setShowStravaButton] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -47,20 +48,12 @@ export default function LandingPage() {
       if (demoMode) {
         // Just refresh the data to show the participant status
         await loadData();
-        alert("Demo user is already enrolled in the challenge!");
         return;
       }
       
-      // For now: Create user and participant, then reveal Strava connect button
+      // For now: Just reveal Strava button - no Supabase changes
       // Future: Navigate to buy ticket page or enter ticket code
-      const { joinActiveChallenge } = await import("../services/participantService");
-      const result = await joinActiveChallenge();
-      
-      if (result.success) {
-        // Reload to refresh participant status and show Strava connect button
-        await loadData();
-        // No alert needed - the UI will show the Strava connect button
-      }
+      setShowStravaButton(true);
     } catch (err) {
       console.error("Failed to join challenge", err);
       alert("Failed to join challenge. Please try again.");
@@ -176,13 +169,13 @@ export default function LandingPage() {
               Rules
             </Button>
 
-            {!isParticipant && !demoMode && (
+            {!isParticipant && !demoMode && !showStravaButton && (
               <Alert severity="info" sx={{ mt: 1 }}>
                 You need to join the challenge to connect Strava.
               </Alert>
             )}
 
-            {(isParticipant || demoMode) && (
+            {(isParticipant || demoMode || showStravaButton) && (
               <Box sx={{ mt: 1 }}>
                 <StravaConnectButton />
               </Box>

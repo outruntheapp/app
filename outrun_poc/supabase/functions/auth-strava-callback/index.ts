@@ -113,6 +113,31 @@ serve(async (req) => {
       onConflict: "user_id",
     });
 
+    // Get active challenge and ensure participant record exists
+    const { data: activeChallenge } = await supabaseAdmin
+      .from("challenges")
+      .select("id")
+      .eq("is_active", true)
+      .single();
+
+    if (activeChallenge) {
+      const { data: existingParticipant } = await supabaseAdmin
+        .from("participants")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("challenge_id", activeChallenge.id)
+        .single();
+
+      if (!existingParticipant) {
+        await supabaseAdmin.from("participants").insert({
+          user_id: userId,
+          challenge_id: activeChallenge.id,
+          excluded: false,
+        });
+        logInfo("Created participant record during Strava auth", { userId });
+      }
+    }
+
     await writeAuditLog({
       actorId: userId,
       action: "STRAVA_CONNECTED",

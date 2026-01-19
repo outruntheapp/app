@@ -100,6 +100,7 @@ VALUES (
 - **Detailed deployment guide**: `SUPABASE_DEPLOYMENT.md`
 - **SQL schema reference**: `SQL_SCHEMA.md`
 - **Edge functions reference**: `EDGE_FUNCTIONS.md`
+- **App flow diagram**: `APP_FLOW_DIAGRAM.md` (application flow and roadmap)
 - **Testing checklist**: `FIRST_RUN_CHECKLIST.md`
 
 ## 🚀 Next Steps After Deployment

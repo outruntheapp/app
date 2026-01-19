@@ -63,7 +63,22 @@ All edge functions have been implemented in `supabase/functions/`:
 
 ### 4. Frontend Updates
 
+#### Pages
+- **`src/pages/index.js`**: Landing/login page with fixed-height centered layout, demo mode toggle
+- **`src/pages/dashboard.js`**: Runner dashboard with summary view (user info, stage progress, rank overview, CTA to leaderboard)
+- **`src/pages/leaderboard.js`**: Full leaderboard page with overall and per-stage views
+- **`src/pages/routes.js`**: New routes page displaying GPX maps for each challenge stage
+- **`src/pages/admin.js`**: Admin panel for participant management
+
+#### Components
+- **`src/components/common/AppHeader.js`**: Full-width header with navigation (Dashboard, Routes, Leaderboard), mobile responsive
+- **`src/components/common/CountdownTimer.js`**: Displays time until challenge starts
+- **`src/components/common/RulesDialog.js`**: Shows challenge rules and information
+- **`src/components/routes/RouteMap.js`**: Displays route maps with Google Maps embed support
+
+#### Services
 - **`src/services/authService.js`**: Updated to use direct Strava OAuth flow instead of Supabase's built-in provider (Strava is not a built-in provider)
+- **`src/services/routeService.js`**: Fetches route data from Supabase routes table
 - **`src/pages/auth/callback.js`**: Enhanced error handling and response validation
 
 ## 🔧 Environment Variables Required

@@ -42,13 +42,15 @@ outrun_poc/
 │   │   ├── auth/          # OAuth / authentication UI
 │   │   ├── dashboard/     # Runner-facing components
 │   │   ├── leaderboard/  # Public leaderboard components
+│   │   ├── routes/        # Route map display components
 │   │   ├── admin/         # Admin-only UI
-│   │   └── common/        # Shared UI (loading, empty states, countdown, rules)
+│   │   └── common/        # Shared UI (header, loading, empty states, countdown, rules)
 │   │
 │   ├── pages/             # Route-level pages (Next.js)
 │   │   ├── index.js       # Landing / login (fixed-height, centered)
-│   │   ├── dashboard.js   # Runner dashboard
-│   │   ├── leaderboard.js # Public leaderboards
+│   │   ├── dashboard.js   # Runner dashboard (summary view)
+│   │   ├── leaderboard.js # Public leaderboards (full data)
+│   │   ├── routes.js      # Challenge routes with GPX maps
 │   │   └── admin.js       # Admin panel
 │   │
 │   ├── services/          # Business logic + Supabase access
@@ -60,6 +62,7 @@ outrun_poc/
 │   │   ├── auditService.js
 │   │   ├── challengeService.js
 │   │   ├── participantService.js  # Participant validation
+│   │   ├── routeService.js        # Route data fetching
 │   │   └── userService.js
 │   │
 │   ├── utils/             # Pure helpers (no side effects)
@@ -251,10 +254,20 @@ Without refactoring core logic.
 - Removed AppHeader for cleaner landing experience
 - Logo positioned directly beneath name (no extra spacing)
 
+### Navigation & UI Enhancements
+- **Full-width header**: AppHeader spans entire viewport, flush at top
+- **Navigation menu**: Dashboard, Routes, Leaderboard links in header (right side)
+- **Mobile responsive**: Hamburger menu on small screens
+- **Routes page**: New `/routes` page displaying GPX maps for each challenge stage
+- **Dashboard improvements**: Added "View Full Leaderboard" CTA button
+- **Route visualization**: Google Maps embed support for route display
+
 ### New Components & Services
 - `CountdownTimer`: Displays time until challenge starts
 - `RulesDialog`: Shows challenge rules and information
+- `RouteMap`: Displays route maps with Google Maps embed
 - `participantService`: Validates user participation status
+- `routeService`: Fetches route data from Supabase
 - `demoMode` utility: Manages demo mode state
 
 ### Documentation
@@ -274,4 +287,5 @@ Without refactoring core logic.
 1. **Setup**: See `instructions/DEPLOYMENT_QUICK_START.md`
 2. **Demo Mode**: Click "Demo Mode OFF" chip in top-right corner to enable
 3. **Development**: All documentation in `instructions/` directory
-4. **Troubleshooting**: Check `instructions/STRAVA_ERROR_FIX.md` for common issues
+4. **App Flow**: See `instructions/APP_FLOW_DIAGRAM.md` for complete application flow and roadmap
+5. **Troubleshooting**: Check `instructions/STRAVA_ERROR_FIX.md` for common issues

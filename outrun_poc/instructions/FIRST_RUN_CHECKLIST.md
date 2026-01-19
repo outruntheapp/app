@@ -42,6 +42,15 @@ Confirm views exist:
 * `leaderboard_overall`
 * `leaderboard_stage`
 
+Confirm RPC functions exist:
+
+* `check_strava_connection_by_email` (from migration `04_check_strava_by_email.sql`)
+
+**⚠️ CRITICAL**: If you see a 406 error when checking email, the RPC function `check_strava_connection_by_email` is missing. Apply the migration:
+1. Open Supabase SQL Editor
+2. Run the SQL from `supabase/migrations/04_check_strava_by_email.sql`
+3. Verify the function exists: `SELECT proname FROM pg_proc WHERE proname = 'check_strava_connection_by_email';`
+
 ✅ If any are missing → stop here
 
 ---

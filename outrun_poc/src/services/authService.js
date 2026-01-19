@@ -45,6 +45,12 @@ export async function checkStravaConnectionByEmail(email) {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/af0ed011-60a4-4d80-97ca-239e912ff0b5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'authService.js:33',message:'RPC error returned',data:{errorCode:error.code,errorMessage:error.message,errorDetails:error.details},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2'})}).catch(()=>{});
       // #endregion
+      
+      // If RPC function doesn't exist, provide helpful error message
+      if (error.code === '42883' || error.message?.includes('does not exist') || error.message?.includes('function')) {
+        console.error('RPC function check_strava_connection_by_email does not exist. Please apply migration 04_check_strava_by_email.sql to your Supabase database.');
+      }
+      
       return { hasStrava: false, userId: null };
     }
 

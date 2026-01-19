@@ -85,17 +85,32 @@ export default function LandingPage() {
   };
 
   const handleEmailSubmit = async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/af0ed011-60a4-4d80-97ca-239e912ff0b5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.js:87',message:'handleEmailSubmit entry',data:{email:email?.substring(0,10)+'...'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3'})}).catch(()=>{});
+    // #endregion
     const error = validateEmail(email);
     if (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/af0ed011-60a4-4d80-97ca-239e912ff0b5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.js:91',message:'Email validation failed',data:{error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       setEmailError(error);
       return;
     }
 
     setCheckingStrava(true);
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/af0ed011-60a4-4d80-97ca-239e912ff0b5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.js:96',message:'Calling checkStravaConnectionByEmail',data:{email:email?.substring(0,10)+'...'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3'})}).catch(()=>{});
+      // #endregion
       const result = await checkStravaConnectionByEmail(email);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/af0ed011-60a4-4d80-97ca-239e912ff0b5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.js:99',message:'checkStravaConnectionByEmail result',data:result,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2'})}).catch(()=>{});
+      // #endregion
       setHasStrava(result.hasStrava);
     } catch (err) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/af0ed011-60a4-4d80-97ca-239e912ff0b5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.js:102',message:'handleEmailSubmit exception',data:{errorMessage:err.message,errorStack:err.stack?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1,H2,H3'})}).catch(()=>{});
+      // #endregion
       console.error("Failed to check Strava connection", err);
       setEmailError("Failed to check connection. Please try again.");
     } finally {

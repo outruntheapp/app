@@ -51,19 +51,15 @@ export default function LandingPage() {
         return;
       }
       
-      // For now, bypass ticket purchase and directly join challenge
-      // TODO: In future, add ticket purchase flow here
+      // For now: Create user and participant, then reveal Strava connect button
+      // Future: Navigate to buy ticket page or enter ticket code
       const { joinActiveChallenge } = await import("../services/participantService");
       const result = await joinActiveChallenge();
       
       if (result.success) {
-        // Reload to refresh participant status
+        // Reload to refresh participant status and show Strava connect button
         await loadData();
-        // Show success message
-        alert("Successfully joined the challenge! You can now connect Strava.");
-      } else if (result.requiresAuth) {
-        // User needs to sign in first, but they can join before connecting Strava
-        alert("Please sign in to join the challenge. You can connect Strava after joining.");
+        // No alert needed - the UI will show the Strava connect button
       }
     } catch (err) {
       console.error("Failed to join challenge", err);

@@ -62,8 +62,8 @@ export default function LandingPage() {
         // Show success message
         alert("Successfully joined the challenge! You can now connect Strava.");
       } else if (result.requiresAuth) {
-        // User needs to authenticate first
-        alert("Please connect Strava first to join the challenge.");
+        // User needs to sign in first, but they can join before connecting Strava
+        alert("Please sign in to join the challenge. You can connect Strava after joining.");
       }
     } catch (err) {
       console.error("Failed to join challenge", err);

@@ -2,7 +2,8 @@
 // Purpose: Demo data constants and utilities
 
 // Demo user ID (consistent across sessions)
-export const DEMO_USER_ID = "00000000-0000-0000-0000-000000000000";
+// Use a valid UUID instead of nil UUID (Supabase doesn't allow nil UUIDs)
+export const DEMO_USER_ID = "aaaaaaaa-0000-0000-0000-000000000000";
 
 // Demo user data
 export const DEMO_USER = {

@@ -71,6 +71,7 @@ export async function isUserParticipant(userId, challengeId) {
 
 /**
  * Join the active challenge (create participant record)
+ * Note: User can join without Strava authentication, but will need to connect Strava later
  */
 export async function joinActiveChallenge() {
   try {
@@ -83,12 +84,15 @@ export async function joinActiveChallenge() {
       data: { user: authUser },
     } = await supabase.auth.getUser();
 
+    // User doesn't need to be authenticated to join challenge
+    // They can join first, then connect Strava later
     if (!authUser) {
-      // User not authenticated - they need to connect Strava first
+      // For now, allow joining without auth by creating an anonymous user
+      // Or show a message that they can join but need to connect Strava to participate
       return { 
         success: false, 
         requiresAuth: true,
-        message: "Please connect Strava first to join the challenge" 
+        message: "Please sign in to join the challenge. You can connect Strava after joining." 
       };
     }
 

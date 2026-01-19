@@ -25,7 +25,8 @@ function logError(message: string, error: unknown) {
 // Main Function
 // ============================================================================
 
-const DEMO_USER_ID = "00000000-0000-0000-0000-000000000000";
+// Use a valid UUID instead of nil UUID (Supabase doesn't allow nil UUIDs)
+const DEMO_USER_ID = "aaaaaaaa-0000-0000-0000-000000000000";
 const DEMO_USER_EMAIL = "demo@outrun.local";
 
 // CORS headers

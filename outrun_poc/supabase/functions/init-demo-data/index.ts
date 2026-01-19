@@ -6,7 +6,8 @@ import { supabaseAdmin } from "../_shared/supabase.ts";
 import { writeAuditLog } from "../_shared/audit.ts";
 import { logInfo, logError } from "../_shared/logger.ts";
 
-const DEMO_USER_ID = "00000000-0000-0000-0000-000000000000";
+// Use a valid UUID instead of nil UUID (Supabase doesn't allow nil UUIDs)
+const DEMO_USER_ID = "aaaaaaaa-0000-0000-0000-000000000000";
 const DEMO_USER_EMAIL = "demo@outrun.local";
 const DEMO_USER_NAME = "Demo Runner";
 

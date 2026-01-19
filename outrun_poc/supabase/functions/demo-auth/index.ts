@@ -5,7 +5,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { supabaseAdmin } from "../_shared/supabase.ts";
 import { logInfo, logError } from "../_shared/logger.ts";
 
-const DEMO_USER_ID = "00000000-0000-0000-0000-000000000000";
+// Use a valid UUID instead of nil UUID (Supabase doesn't allow nil UUIDs)
+const DEMO_USER_ID = "aaaaaaaa-0000-0000-0000-000000000000";
 const DEMO_USER_EMAIL = "demo@outrun.local";
 
 // CORS headers

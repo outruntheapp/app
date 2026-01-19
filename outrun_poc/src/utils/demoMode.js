@@ -2,7 +2,8 @@
 // Purpose: Demo mode utilities to bypass Strava auth for development/testing
 
 import { DEMO_USER_ID, DEMO_USER } from "../../demo/demoData";
-import { initializeDemoData } from "../../demo/demoService";
+import { initializeDemoData, getDemoAuthSession } from "../../demo/demoService";
+import { supabase } from "../services/supabaseClient";
 
 const DEMO_MODE_KEY = "outrun_demo_mode";
 const DEMO_USER_KEY = "outrun_demo_user";
@@ -17,16 +18,25 @@ export function isDemoMode() {
 
 /**
  * Enable demo mode and initialize demo data
+ * Creates demo data in Supabase and establishes auth session
  */
 export async function enableDemoMode() {
   if (typeof window === "undefined") return;
   
   try {
+    // Set demo mode flag first
     localStorage.setItem(DEMO_MODE_KEY, "true");
     localStorage.setItem(DEMO_USER_KEY, JSON.stringify(DEMO_USER));
     
-    // Initialize demo data in Supabase
+    // Initialize demo data in Supabase via edge function
     await initializeDemoData();
+    
+    // Get demo auth session and sign in
+    const sessionResult = await getDemoAuthSession();
+    
+    if (!sessionResult.success) {
+      throw new Error("Failed to establish demo auth session");
+    }
     
     return { success: true };
   } catch (err) {
@@ -41,24 +51,54 @@ export async function enableDemoMode() {
 /**
  * Disable demo mode
  */
-export function disableDemoMode() {
+export async function disableDemoMode() {
   if (typeof window === "undefined") return;
+  
+  // Sign out the demo user
+  try {
+    await supabase.auth.signOut();
+  } catch (err) {
+    console.error("Failed to sign out demo user", err);
+  }
+  
   localStorage.removeItem(DEMO_MODE_KEY);
   localStorage.removeItem(DEMO_USER_KEY);
 }
 
 /**
  * Get demo user if demo mode is enabled
+ * Tries to fetch from Supabase first, falls back to localStorage/default
  */
-export function getDemoUser() {
+export async function getDemoUser() {
   if (!isDemoMode()) return null;
-  const demoUserStr = localStorage.getItem(DEMO_USER_KEY);
-  if (!demoUserStr) return null;
+  
   try {
-    return JSON.parse(demoUserStr);
-  } catch {
-    return DEMO_USER; // Fallback to default demo user
+    // Try to fetch demo user from Supabase
+    const { data } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", DEMO_USER_ID)
+      .single();
+    
+    if (data) {
+      return data;
+    }
+  } catch (err) {
+    // If fetch fails, fall back to localStorage/default
+    console.warn("Failed to fetch demo user from Supabase, using fallback", err);
   }
+  
+  // Fallback to localStorage or default
+  const demoUserStr = localStorage.getItem(DEMO_USER_KEY);
+  if (demoUserStr) {
+    try {
+      return JSON.parse(demoUserStr);
+    } catch {
+      return DEMO_USER; // Fallback to default demo user
+    }
+  }
+  
+  return DEMO_USER; // Final fallback
 }
 
 /**

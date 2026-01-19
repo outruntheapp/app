@@ -4,12 +4,18 @@
 import { supabase } from "./supabaseClient";
 import { logError } from "../utils/logger";
 import { fetchActiveChallenge } from "./challengeService";
+import { isDemoMode, getDemoUserId } from "../utils/demoMode";
 
 /**
  * Check if current user is a participant in the active challenge
  */
 export async function isCurrentUserParticipant() {
   try {
+    // In demo mode, demo user is always a participant
+    if (isDemoMode()) {
+      return true;
+    }
+
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
@@ -68,6 +74,11 @@ export async function isUserParticipant(userId, challengeId) {
  */
 export async function joinActiveChallenge() {
   try {
+    // In demo mode, demo user is already a participant (created by init-demo-data)
+    if (isDemoMode()) {
+      return { success: true, message: "Demo user is already a participant" };
+    }
+
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();

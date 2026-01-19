@@ -43,6 +43,14 @@ export default function LandingPage() {
 
   const handleJoinChallenge = async () => {
     try {
+      // In demo mode, demo user is already a participant (created by init-demo-data)
+      if (demoMode) {
+        // Just refresh the data to show the participant status
+        await loadData();
+        alert("Demo user is already enrolled in the challenge!");
+        return;
+      }
+      
       // For now, bypass ticket purchase and directly join challenge
       // TODO: In future, add ticket purchase flow here
       const { joinActiveChallenge } = await import("../services/participantService");
@@ -174,7 +182,7 @@ export default function LandingPage() {
 
             {!isParticipant && !demoMode && (
               <Alert severity="info" sx={{ mt: 1 }}>
-                You need a valid ticket to connect Strava. Purchase a ticket first.
+                You need to join the challenge to connect Strava.
               </Alert>
             )}
 

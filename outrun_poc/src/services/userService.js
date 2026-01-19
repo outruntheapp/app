@@ -9,7 +9,7 @@ export async function fetchCurrentUser() {
   try {
     // Check if demo mode is enabled
     if (isDemoMode()) {
-      const demoUser = getDemoUser();
+      const demoUser = await getDemoUser();
       if (demoUser) {
         // Try to fetch demo user from database, or return demo user object
         const { data } = await supabase

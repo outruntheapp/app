@@ -88,7 +88,7 @@ This document provides a visual roadmap of the OUTRUN application flow, user jou
 ┌─────────────────────────────────────────────────────────────┐
 │                    AppHeader (Full Width)                    │
 │                                                              │
-│  [OUTRUN Logo]                    [Dashboard] [Routes]      │
+│  [OUTRUN Logo]            [Dashboard] [Routes]  [Leaderboard] │
 │                                                              │
 │  (Centered)                      (Navigation Links)         │
 │                                                              │
@@ -226,7 +226,12 @@ User clicks "Connect Strava"
 - **Features**:
   - Challenge countdown timer
   - "Join Challenge" button (reveals Strava button)
-  - "Connect Strava" button
+    - User enters email
+    - FUTURE ADDITION: Enter code from ticket 
+    - reveals Strava button
+  - "Connect Strava" button 
+    - only first time, use email entered on "Join Challenge" for Strava Auth
+    - if user already connected Strava, show "ENTER"
   - Demo mode toggle
   - Rules dialog
 - **No navigation header**

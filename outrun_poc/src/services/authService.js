@@ -3,10 +3,75 @@
 
 import { logInfo, logError } from "../utils/logger";
 import { isDemoMode } from "../utils/demoMode";
+import { supabase } from "./supabaseClient";
 
 const STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize";
+const USER_EMAIL_STORAGE_KEY = "outrun_user_email";
 
-export async function connectStrava() {
+/**
+ * Check if a user with the given email has Strava connected
+ * @param {string} email - User's email address
+ * @returns {Promise<{hasStrava: boolean, userId: string | null}>}
+ */
+export async function checkStravaConnectionByEmail(email) {
+  try {
+    if (!email || typeof email !== "string") {
+      return { hasStrava: false, userId: null };
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, strava_athlete_id")
+      .eq("email", email.trim().toLowerCase())
+      .single();
+
+    if (error && error.code !== "PGRST116") {
+      // PGRST116 = no rows found
+      logError("Failed to check Strava connection", error);
+      return { hasStrava: false, userId: null };
+    }
+
+    if (!data) {
+      return { hasStrava: false, userId: null };
+    }
+
+    // User has Strava if strava_athlete_id is not null
+    const hasStrava = data.strava_athlete_id !== null && data.strava_athlete_id !== undefined;
+
+    return {
+      hasStrava,
+      userId: data.id,
+    };
+  } catch (err) {
+    logError("Failed to check Strava connection by email", err);
+    return { hasStrava: false, userId: null };
+  }
+}
+
+/**
+ * Get the auth email for a user by their provided email
+ * Note: This requires an edge function since we can't access auth.admin from client
+ * For now, we'll just redirect and let the dashboard handle auth
+ * @param {string} email - User's email address
+ * @returns {Promise<string | null>} - Auth email (strava_{id}@strava.local) or null
+ */
+export async function getAuthEmailByUserEmail(email) {
+  try {
+    if (!email || typeof email !== "string") {
+      return null;
+    }
+
+    // For MVP, we can't easily get auth email client-side
+    // The dashboard will handle authentication
+    // In future, we could create an edge function to look this up
+    return null;
+  } catch (err) {
+    logError("Failed to get auth email by user email", err);
+    return null;
+  }
+}
+
+export async function connectStrava(email = null) {
   try {
     // Check if demo mode is enabled
     if (isDemoMode()) {
@@ -15,7 +80,12 @@ export async function connectStrava() {
       return;
     }
 
-    logInfo("Starting Strava OAuth");
+    logInfo("Starting Strava OAuth", { email: email ? "provided" : "none" });
+
+    // Store email in localStorage if provided
+    if (email) {
+      localStorage.setItem(USER_EMAIL_STORAGE_KEY, email);
+    }
 
     // Get client ID from environment (public, safe to expose)
     const clientId = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
@@ -42,4 +112,19 @@ export async function connectStrava() {
     logError("Strava OAuth failed", err);
     throw err;
   }
+}
+
+/**
+ * Clear stored user email from localStorage
+ */
+export function clearStoredEmail() {
+  localStorage.removeItem(USER_EMAIL_STORAGE_KEY);
+}
+
+/**
+ * Get stored user email from localStorage
+ */
+export function getStoredEmail() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(USER_EMAIL_STORAGE_KEY);
 }

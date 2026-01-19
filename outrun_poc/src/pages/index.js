@@ -2,7 +2,7 @@
 // Purpose: Landing / login page with OUTRUN branding
 
 import { useState, useEffect } from "react";
-import { Container, Stack, Typography, Button, Alert, Box, Chip } from "@mui/material";
+import { Container, Stack, Typography, Button, Alert, Box, Chip, TextField } from "@mui/material";
 import StravaConnectButton from "../components/auth/StravaConnectButton";
 import Image from "next/image";
 import CountdownTimer from "../components/common/CountdownTimer";
@@ -10,6 +10,7 @@ import RulesDialog from "../components/common/RulesDialog";
 import { fetchActiveChallenge } from "../services/challengeService";
 import { isCurrentUserParticipant } from "../services/participantService";
 import { isDemoMode, disableDemoMode } from "../utils/demoMode";
+import { checkStravaConnectionByEmail } from "../services/authService";
 import name from "../assets/name.png";
 import logo from "../assets/logo.png";
 
@@ -19,7 +20,11 @@ export default function LandingPage() {
   const [rulesOpen, setRulesOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
-  const [showStravaButton, setShowStravaButton] = useState(false);
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [hasStrava, setHasStrava] = useState(null); // null = not checked, true/false = checked
+  const [checkingStrava, setCheckingStrava] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -51,12 +56,56 @@ export default function LandingPage() {
         return;
       }
       
-      // For now: Just reveal Strava button - no Supabase changes
-      // Future: Navigate to buy ticket page or enter ticket code
-      setShowStravaButton(true);
+      // Show email input field
+      setShowEmailInput(true);
+      setEmail("");
+      setEmailError("");
+      setHasStrava(null);
     } catch (err) {
       console.error("Failed to join challenge", err);
       alert("Failed to join challenge. Please try again.");
+    }
+  };
+
+  const validateEmail = (emailValue) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailValue) {
+      return "Email is required";
+    }
+    if (!emailRegex.test(emailValue)) {
+      return "Please enter a valid email address";
+    }
+    return "";
+  };
+
+  const handleEmailChange = (event) => {
+    const value = event.target.value;
+    setEmail(value);
+    setEmailError(validateEmail(value));
+  };
+
+  const handleEmailSubmit = async () => {
+    const error = validateEmail(email);
+    if (error) {
+      setEmailError(error);
+      return;
+    }
+
+    setCheckingStrava(true);
+    try {
+      const result = await checkStravaConnectionByEmail(email);
+      setHasStrava(result.hasStrava);
+    } catch (err) {
+      console.error("Failed to check Strava connection", err);
+      setEmailError("Failed to check connection. Please try again.");
+    } finally {
+      setCheckingStrava(false);
+    }
+  };
+
+  const handleEmailKeyPress = (event) => {
+    if (event.key === "Enter" && !emailError && email) {
+      handleEmailSubmit();
     }
   };
 
@@ -153,32 +202,82 @@ export default function LandingPage() {
           {challenge && <CountdownTimer targetDate={challenge.starts_at} />}
 
           <Stack spacing={2} sx={{ width: "100%", mt: 2 }}>
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleJoinChallenge}
-            >
-              Join Challenge
-            </Button>
+            {!showEmailInput ? (
+              <>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={handleJoinChallenge}
+                >
+                  Join Challenge
+                </Button>
 
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={() => setRulesOpen(true)}
-            >
-              Rules
-            </Button>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => setRulesOpen(true)}
+                >
+                  Rules
+                </Button>
 
-            {!isParticipant && !demoMode && !showStravaButton && (
-              <Alert severity="info" sx={{ mt: 1 }}>
-                You need to join the challenge to connect Strava.
-              </Alert>
-            )}
+                {!isParticipant && !demoMode && (
+                  <Alert severity="info" sx={{ mt: 1 }}>
+                    You need to join the challenge to connect Strava.
+                  </Alert>
+                )}
 
-            {(isParticipant || demoMode || showStravaButton) && (
-              <Box sx={{ mt: 1 }}>
-                <StravaConnectButton />
-              </Box>
+                {(isParticipant || demoMode) && (
+                  <Box sx={{ mt: 1 }}>
+                    <StravaConnectButton />
+                  </Box>
+                )}
+              </>
+            ) : (
+              <>
+                <TextField
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  onKeyPress={handleEmailKeyPress}
+                  error={!!emailError}
+                  helperText={emailError || "Enter the email you use for Strava"}
+                  fullWidth
+                  disabled={checkingStrava}
+                  autoFocus
+                />
+
+                {hasStrava === null && (
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    onClick={handleEmailSubmit}
+                    disabled={!!emailError || !email || checkingStrava}
+                  >
+                    {checkingStrava ? "Checking..." : "Continue"}
+                  </Button>
+                )}
+
+                {hasStrava !== null && (
+                  <Box sx={{ mt: 1 }}>
+                    <StravaConnectButton email={email} hasStrava={hasStrava} />
+                  </Box>
+                )}
+
+                <Button
+                  variant="text"
+                  fullWidth
+                  onClick={() => {
+                    setShowEmailInput(false);
+                    setEmail("");
+                    setEmailError("");
+                    setHasStrava(null);
+                  }}
+                  size="small"
+                >
+                  Cancel
+                </Button>
+              </>
             )}
           </Stack>
         </Stack>

@@ -4,6 +4,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../../services/supabaseClient";
+import { getStoredEmail, clearStoredEmail } from "../../services/authService";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -17,6 +18,9 @@ export default function AuthCallbackPage() {
       }
 
       try {
+        // Get stored email from localStorage if available
+        const userEmail = getStoredEmail();
+
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/auth-strava-callback`,
           {
@@ -25,7 +29,10 @@ export default function AuthCallbackPage() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
             },
-            body: JSON.stringify({ code }),
+            body: JSON.stringify({ 
+              code,
+              userEmail: userEmail || null, // Pass email if available
+            }),
           }
         );
 
@@ -36,6 +43,9 @@ export default function AuthCallbackPage() {
         const data = await response.json();
         
         if (data.success && data.userId) {
+          // Clear stored email after successful auth
+          clearStoredEmail();
+          
           // Sign in the user using the email we created
           // Note: This assumes the edge function created an auth user
           // The email format is strava_{athlete_id}@strava.local
@@ -47,6 +57,8 @@ export default function AuthCallbackPage() {
         }
       } catch (err) {
         console.error("Auth callback failed", err);
+        // Clear stored email on error
+        clearStoredEmail();
         router.replace("/?error=auth_failed");
       }
     };

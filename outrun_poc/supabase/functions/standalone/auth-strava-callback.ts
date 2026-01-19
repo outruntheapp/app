@@ -62,13 +62,16 @@ serve(async (req) => {
   }
 
   try {
-    const { code } = await req.json();
+    const { code, userEmail } = await req.json();
 
     if (!code) {
       return new Response("Missing OAuth code", { status: 400 });
     }
 
-    logInfo("Processing Strava OAuth callback", { code: code.substring(0, 10) });
+    logInfo("Processing Strava OAuth callback", { 
+      code: code.substring(0, 10),
+      hasUserEmail: !!userEmail 
+    });
 
     const tokenRes = await fetch(STRAVA_TOKEN_URL, {
       method: "POST",
@@ -101,13 +104,24 @@ serve(async (req) => {
 
     if (existingUser) {
       userId = existingUser.id;
-      // Update user info
+      // Update user info, including email if provided
+      const updateData: {
+        full_name: string;
+        sex: string | null;
+        email?: string;
+      } = {
+        full_name: `${athlete.firstname} ${athlete.lastname}`,
+        sex: athlete.sex,
+      };
+      
+      // Store provided email if available
+      if (userEmail && typeof userEmail === "string" && userEmail.trim()) {
+        updateData.email = userEmail.trim().toLowerCase();
+      }
+      
       await supabaseAdmin
         .from("users")
-        .update({
-          full_name: `${athlete.firstname} ${athlete.lastname}`,
-          sex: athlete.sex,
-        })
+        .update(updateData)
         .eq("id", userId);
     } else {
       // Create auth user first using Admin API
@@ -127,13 +141,26 @@ serve(async (req) => {
 
       userId = authUser.user.id;
 
-      // Create user record
-      const { error: userError } = await supabaseAdmin.from("users").insert({
+      // Create user record with email if provided
+      const userData: {
+        id: string;
+        strava_athlete_id: number;
+        full_name: string;
+        sex: string | null;
+        email?: string;
+      } = {
         id: userId,
         strava_athlete_id: athlete.id,
         full_name: `${athlete.firstname} ${athlete.lastname}`,
         sex: athlete.sex,
-      });
+      };
+      
+      // Store provided email if available
+      if (userEmail && typeof userEmail === "string" && userEmail.trim()) {
+        userData.email = userEmail.trim().toLowerCase();
+      }
+      
+      const { error: userError } = await supabaseAdmin.from("users").insert(userData);
 
       if (userError) {
         await supabaseAdmin.auth.admin.deleteUser(userId);

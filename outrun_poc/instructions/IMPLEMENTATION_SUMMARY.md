@@ -163,8 +163,13 @@ Invalid activities are silently ignored (marked as processed but no error thrown
 - `supabase/functions/admin-exclude-user/index.ts`
 - `supabase/functions/refresh-leaderboards/index.ts`
 - `supabase/migrations/match_activity_to_route.sql`
+- `src/pages/routes.js` (new routes page)
+- `src/components/routes/RouteMap.js` (route map component)
+- `src/services/routeService.js` (route data service)
 - `IMPLEMENTATION_SUMMARY.md`
 
 ### Modified
 - `src/services/authService.js` (updated to direct Strava OAuth)
 - `src/pages/auth/callback.js` (enhanced error handling)
+- `src/components/common/AppHeader.js` (full-width header with navigation)
+- `src/pages/dashboard.js` (added leaderboard CTA)

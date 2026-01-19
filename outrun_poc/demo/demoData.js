@@ -5,11 +5,14 @@
 // Use a valid UUID instead of nil UUID (Supabase doesn't allow nil UUIDs)
 export const DEMO_USER_ID = "aaaaaaaa-0000-0000-0000-000000000000";
 
+// Demo Strava athlete ID (simulates real Strava athlete)
+export const DEMO_STRAVA_ATHLETE_ID = 999999999;
+
 // Demo user data
 export const DEMO_USER = {
   id: DEMO_USER_ID,
   full_name: "Demo Runner",
-  strava_athlete_id: null,
+  strava_athlete_id: DEMO_STRAVA_ATHLETE_ID,
   is_demo: true,
 };
 

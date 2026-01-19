@@ -285,6 +285,12 @@ Without refactoring core logic.
 - Fixed CORS issues in `auth-strava-callback` edge function
 - Improved error handling and user feedback
 - Auto-push Git hook configured (pushes to GitHub after commits on main branch)
+- **Security & Data Integrity Fixes**:
+  - Created secure RPC function `check_strava_connection_by_email` to bypass RLS for email lookups
+  - OAuth callback now uses deterministic matching (only `strava_athlete_id`, never email)
+  - Added email collision checks to prevent overwriting other users' data
+  - Demo mode now simulates full OAuth flow with demo Strava athlete ID (999999999)
+  - Global error handlers suppress third-party analytics CORS errors (Strava, Google Analytics)
 
 ---
 

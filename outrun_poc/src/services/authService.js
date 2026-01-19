@@ -10,6 +10,7 @@ const USER_EMAIL_STORAGE_KEY = "outrun_user_email";
 
 /**
  * Check if a user with the given email has Strava connected
+ * Uses secure RPC function to bypass RLS restrictions
  * @param {string} email - User's email address
  * @returns {Promise<{hasStrava: boolean, userId: string | null}>}
  */
@@ -19,15 +20,13 @@ export async function checkStravaConnectionByEmail(email) {
       return { hasStrava: false, userId: null };
     }
 
-    const { data, error } = await supabase
-      .from("users")
-      .select("id, strava_athlete_id")
-      .eq("email", email.trim().toLowerCase())
-      .single();
+    // Use RPC function to avoid RLS violations
+    const { data, error } = await supabase.rpc("check_strava_connection_by_email", {
+      user_email: email.trim().toLowerCase(),
+    });
 
-    if (error && error.code !== "PGRST116") {
-      // PGRST116 = no rows found
-      logError("Failed to check Strava connection", error);
+    if (error) {
+      logError("Failed to check Strava connection via RPC", error);
       return { hasStrava: false, userId: null };
     }
 
@@ -35,12 +34,10 @@ export async function checkStravaConnectionByEmail(email) {
       return { hasStrava: false, userId: null };
     }
 
-    // User has Strava if strava_athlete_id is not null
-    const hasStrava = data.strava_athlete_id !== null && data.strava_athlete_id !== undefined;
-
+    // Parse JSONB result from RPC
     return {
-      hasStrava,
-      userId: data.id,
+      hasStrava: data.hasStrava === true,
+      userId: data.userId || null,
     };
   } catch (err) {
     logError("Failed to check Strava connection by email", err);
@@ -75,8 +72,20 @@ export async function connectStrava(email = null) {
   try {
     // Check if demo mode is enabled
     if (isDemoMode()) {
-      logInfo("Demo mode enabled - skipping Strava OAuth");
-      alert("Demo mode is enabled. Strava connection is disabled in demo mode.");
+      logInfo("Demo mode enabled - simulating Strava OAuth");
+      
+      // Store email in localStorage if provided
+      if (email) {
+        localStorage.setItem(USER_EMAIL_STORAGE_KEY, email);
+      }
+      
+      // Simulate OAuth by calling callback with demo code
+      // This ensures demo mode goes through the same flow as real OAuth
+      const demoCode = `demo_code_${Date.now()}`;
+      const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`;
+      
+      // Redirect to callback with demo code
+      window.location.href = `${redirectUri}?code=${demoCode}`;
       return;
     }
 

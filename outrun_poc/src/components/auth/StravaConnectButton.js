@@ -5,8 +5,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@mui/material";
 import { connectStrava } from "../../services/authService";
-import { isDemoMode } from "../../utils/demoMode";
-import { getDemoAuthSession } from "../../../demo/demoService";
 import { supabase } from "../../services/supabaseClient";
 
 export default function StravaConnectButton({ email = null, hasStrava = false }) {
@@ -64,22 +62,19 @@ export default function StravaConnectButton({ email = null, hasStrava = false })
     try {
       setLoading(true);
 
-      // Check if demo mode is enabled
-      if (isDemoMode()) {
-        // In demo mode, simulate auth by getting demo session and redirecting
-        const session = await getDemoAuthSession();
-        if (session.success) {
-          // Redirect to dashboard after successful demo auth
-          router.push("/dashboard");
-        } else {
-          throw new Error("Failed to get demo auth session");
-        }
-      } else {
-        // Normal Strava OAuth flow with email
-        await connectStrava(email);
-      }
+      // connectStrava now handles demo mode internally
+      // It will simulate OAuth flow by redirecting to callback with demo code
+      await connectStrava(email);
     } catch (err) {
       console.error("Connect failed", err);
+      // Suppress CORS errors from Strava analytics
+      const errorMessage = err.message || String(err);
+      if (errorMessage.includes("Access-Control-Allow-Origin") && 
+          (errorMessage.includes("strava.com") || errorMessage.includes("google-analytics"))) {
+        // This is a third-party analytics CORS error, ignore it
+        console.warn("Suppressed third-party analytics CORS error");
+        return;
+      }
       alert("Failed to connect. Please try again.");
     } finally {
       setLoading(false);

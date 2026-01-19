@@ -29,16 +29,24 @@ if (isDemoMode()) {
 
 ## Demo User Data
 When demo mode is enabled, a demo user is created with:
-- `id`: "demo-user-id"
+- `id`: "aaaaaaaa-0000-0000-0000-000000000000"
 - `full_name`: "Demo Runner"
-- `strava_athlete_id`: null
+- `strava_athlete_id`: 999999999 (demo Strava athlete ID)
+- `email`: "demo@outrun.local"
 - `is_demo`: true
 
+## How Demo Mode Works
+Demo mode simulates the full OAuth flow:
+1. When "Connect with Strava" is clicked in demo mode, it redirects to the OAuth callback with a demo code
+2. The callback detects demo mode and uses mock Strava athlete data instead of calling the real Strava API
+3. The same callback logic runs as in production, ensuring demo mode mirrors real behavior
+4. Demo user is created/updated with demo Strava athlete ID (999999999)
+
 ## Limitations
-- Demo mode does not connect to Strava
+- Demo mode uses mock Strava data (no real API calls)
 - No real activity data will be synced
-- Some features requiring real Strava data may not work
 - Demo mode is stored in localStorage and persists across page reloads
+- Demo mode fully simulates OAuth flow for testing purposes
 
 ## Disabling Demo Mode
 - Click "Disable Demo Mode" button on landing page

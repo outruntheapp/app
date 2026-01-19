@@ -27,43 +27,77 @@ serve(async (req) => {
       return new Response("Missing OAuth code", { status: 400 });
     }
 
+    // Check if this is a demo OAuth (special code or header)
+    const isDemo = (typeof code === "string" && code.startsWith("demo_code_")) ||
+                   req.headers.get("x-demo-mode") === "true";
+
     logInfo("Processing Strava OAuth callback", { 
       code: code.substring(0, 10),
-      hasUserEmail: !!userEmail 
+      hasUserEmail: !!userEmail,
+      isDemo,
     });
 
-    const tokenRes = await fetch(STRAVA_TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_id: Deno.env.get("STRAVA_CLIENT_ID"),
-        client_secret: Deno.env.get("STRAVA_CLIENT_SECRET"),
-        code,
-        grant_type: "authorization_code",
-      }),
-    });
+    let tokenData: any;
+    let athlete: any;
 
-    if (!tokenRes.ok) {
-      const errorText = await tokenRes.text();
-      logError("Strava token exchange failed", { status: tokenRes.status, error: errorText });
-      throw new Error("Strava token exchange failed");
+    if (isDemo) {
+      // Demo mode: Use demo athlete data instead of real Strava API
+      const DEMO_STRAVA_ATHLETE_ID = 999999999;
+      
+      athlete = {
+        id: DEMO_STRAVA_ATHLETE_ID,
+        firstname: "Demo",
+        lastname: "Runner",
+        sex: null,
+      };
+      
+      // Mock token data for demo
+      tokenData = {
+        access_token: "demo_access_token",
+        refresh_token: "demo_refresh_token",
+        expires_at: Math.floor(Date.now() / 1000) + 21600, // 6 hours from now
+        athlete,
+      };
+      
+      logInfo("Using demo athlete data", { athleteId: DEMO_STRAVA_ATHLETE_ID });
+    } else {
+      // Normal Strava OAuth flow
+      const tokenRes = await fetch(STRAVA_TOKEN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: Deno.env.get("STRAVA_CLIENT_ID"),
+          client_secret: Deno.env.get("STRAVA_CLIENT_SECRET"),
+          code,
+          grant_type: "authorization_code",
+        }),
+      });
+
+      if (!tokenRes.ok) {
+        const errorText = await tokenRes.text();
+        logError("Strava token exchange failed", { status: tokenRes.status, error: errorText });
+        throw new Error("Strava token exchange failed");
+      }
+
+      tokenData = await tokenRes.json();
+      athlete = tokenData.athlete;
     }
-
-    const tokenData = await tokenRes.json();
-    const athlete = tokenData.athlete;
 
     let userId: string;
 
-    // Check if user exists by strava_athlete_id
+    // CRITICAL: Only match by strava_athlete_id - NEVER by email
+    // This ensures deterministic, one-to-one mapping: one Strava athlete = one Supabase user
     const { data: existingUser } = await supabaseAdmin
       .from("users")
-      .select("id")
+      .select("id, email")
       .eq("strava_athlete_id", athlete.id)
       .single();
 
     if (existingUser) {
       userId = existingUser.id;
-      // Update user info, including email if provided
+      logInfo("Found existing user by strava_athlete_id", { userId, athleteId: athlete.id });
+      
+      // Update user info
       const updateData: {
         full_name: string;
         sex: string | null;
@@ -73,9 +107,38 @@ serve(async (req) => {
         sex: athlete.sex,
       };
       
-      // Store provided email if available
+      // Only update email if:
+      // 1. User-provided email exists
+      // 2. Current user has no email OR email matches provided email
+      // 3. No other user has this email
       if (userEmail && typeof userEmail === "string" && userEmail.trim()) {
-        updateData.email = userEmail.trim().toLowerCase();
+        const trimmedEmail = userEmail.trim().toLowerCase();
+        
+        // Check if email is already taken by another user
+        const { data: emailUser } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("email", trimmedEmail)
+          .neq("id", userId)
+          .single();
+        
+        if (emailUser) {
+          logInfo("Email already taken by another user, skipping email update", {
+            email: trimmedEmail,
+            existingUserId: userId,
+            emailOwnerId: emailUser.id,
+          });
+        } else if (!existingUser.email || existingUser.email === trimmedEmail) {
+          // Safe to set/update email
+          updateData.email = trimmedEmail;
+          logInfo("Updating user email", { userId, email: trimmedEmail });
+        } else {
+          logInfo("User already has different email, preserving existing email", {
+            userId,
+            existingEmail: existingUser.email,
+            providedEmail: trimmedEmail,
+          });
+        }
       }
       
       await supabaseAdmin
@@ -101,7 +164,7 @@ serve(async (req) => {
 
       userId = authUser.user.id;
 
-      // Create user record with email if provided
+      // Create user record with email if provided and not already taken
       const userData: {
         id: string;
         strava_athlete_id: number;
@@ -115,9 +178,28 @@ serve(async (req) => {
         sex: athlete.sex,
       };
       
-      // Store provided email if available
+      // Store provided email if available and not already taken by another user
       if (userEmail && typeof userEmail === "string" && userEmail.trim()) {
-        userData.email = userEmail.trim().toLowerCase();
+        const trimmedEmail = userEmail.trim().toLowerCase();
+        
+        // Check if email is already taken
+        const { data: emailUser } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("email", trimmedEmail)
+          .single();
+        
+        if (!emailUser) {
+          // Email is available, safe to use
+          userData.email = trimmedEmail;
+          logInfo("Setting user email on creation", { userId, email: trimmedEmail });
+        } else {
+          logInfo("Email already taken, creating user without email", {
+            userId,
+            email: trimmedEmail,
+            existingUserId: emailUser.id,
+          });
+        }
       }
       
       const { error: userError } = await supabaseAdmin.from("users").insert(userData);

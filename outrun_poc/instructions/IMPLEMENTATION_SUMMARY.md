@@ -26,8 +26,12 @@ All edge functions have been implemented in `supabase/functions/`:
 #### Edge Functions
 - **`auth-strava-callback/index.ts`**: 
   - Handles Strava OAuth callback
+  - **Deterministic matching**: Only uses `strava_athlete_id` for user lookup (never email)
+  - **Email collision prevention**: Checks if email is already taken before updating
+  - **Demo mode support**: Detects demo OAuth codes and uses mock athlete data
   - Creates auth user if needed
   - Stores Strava tokens securely
+  - Stores user-provided email in `users.email` field (if available and not taken)
   - Writes audit log for `STRAVA_CONNECTED`
   
 - **`sync-strava-activities/index.ts`**:
@@ -53,13 +57,19 @@ All edge functions have been implemented in `supabase/functions/`:
 - **`refresh-leaderboards/index.ts`**:
   - Placeholder (leaderboards are DB views, no refresh needed)
 
-### 3. Database Function
+### 3. Database Functions
 
 - **`supabase/migrations/match_activity_to_route.sql`**:
   - Postgres function for route matching
   - Compares activity polyline against buffered route
   - Returns boolean based on 80% overlap threshold
   - Note: Requires `ST_LineFromEncodedPolyline` function (may need PostGIS extension)
+
+- **`supabase/migrations/04_check_strava_by_email.sql`**:
+  - Secure RPC function `check_strava_connection_by_email` with `SECURITY DEFINER`
+  - Allows email lookup without RLS violations
+  - Returns JSONB with `hasStrava` boolean and `userId`
+  - Grants execute permission to `anon` and `authenticated` roles
 
 ### 4. Frontend Updates
 
@@ -87,13 +97,16 @@ All edge functions have been implemented in `supabase/functions/`:
 #### Services
 - **`src/services/authService.js`**: 
   - Updated to use direct Strava OAuth flow instead of Supabase's built-in provider (Strava is not a built-in provider)
-  - Added `checkStravaConnectionByEmail()` to check if user has Strava connected by email
+  - `checkStravaConnectionByEmail()` now uses secure RPC function to bypass RLS restrictions
   - Updated `connectStrava()` to accept and store email in localStorage
+  - Demo mode support: simulates OAuth flow by redirecting to callback with demo code
   - Added email storage helpers (`getStoredEmail()`, `clearStoredEmail()`)
 - **`src/services/routeService.js`**: Fetches route data from Supabase routes table
 - **`src/pages/auth/callback.js`**: 
   - Enhanced error handling and response validation
   - Reads email from localStorage and passes to edge function
+  - Detects demo mode OAuth and passes `x-demo-mode` header
+  - Suppresses third-party analytics CORS errors
 
 ## 🔧 Environment Variables Required
 
@@ -183,11 +196,15 @@ Invalid activities are silently ignored (marked as processed but no error thrown
 - `IMPLEMENTATION_SUMMARY.md`
 
 ### Modified
-- `src/services/authService.js` (updated to direct Strava OAuth, added email connection check)
-- `src/pages/auth/callback.js` (enhanced error handling, email passing to edge function)
+- `src/services/authService.js` (updated to use RPC for email lookup, demo mode OAuth simulation)
+- `src/pages/auth/callback.js` (demo mode detection, CORS error suppression)
+- `src/pages/_app.js` (global error handlers to suppress third-party analytics CORS errors)
 - `src/components/common/AppHeader.js` (full-width header with navigation)
-- `src/components/auth/StravaConnectButton.js` (added ENTER button logic, email prop support)
+- `src/components/auth/StravaConnectButton.js` (removed unused imports, demo mode handled by connectStrava)
 - `src/pages/index.js` (added email input, connection check, conditional button display)
 - `src/pages/dashboard.js` (added leaderboard CTA)
-- `supabase/functions/auth-strava-callback/index.ts` (accepts and stores userEmail in users.email)
-- `supabase/functions/standalone/auth-strava-callback.ts` (accepts and stores userEmail in users.email)
+- `supabase/functions/auth-strava-callback/index.ts` (deterministic matching, email collision checks, demo mode support)
+- `supabase/functions/standalone/auth-strava-callback.ts` (deterministic matching, email collision checks, demo mode support)
+- `supabase/functions/init-demo-data/index.ts` (sets demo Strava athlete ID)
+- `supabase/functions/standalone/init-demo-data.ts` (sets demo Strava athlete ID)
+- `demo/demoData.js` (added DEMO_STRAVA_ATHLETE_ID constant)

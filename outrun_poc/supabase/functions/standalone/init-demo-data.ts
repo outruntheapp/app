@@ -123,11 +123,15 @@ serve(async (req) => {
     if (existingUser) {
       logInfo("Demo user record already exists");
     } else {
+      // Use demo Strava athlete ID for demo user
+      const DEMO_STRAVA_ATHLETE_ID = 999999999;
+      
       const { error: userError } = await supabaseAdmin.from("users").insert({
         id: DEMO_USER_ID,
         full_name: DEMO_USER_NAME,
-        strava_athlete_id: null,
+        strava_athlete_id: DEMO_STRAVA_ATHLETE_ID,
         sex: null,
+        email: DEMO_USER_EMAIL,
       });
 
       if (userError) {

@@ -79,14 +79,26 @@ serve(async (req) => {
       .eq("id", DEMO_USER_ID)
       .single();
 
+    // Use demo Strava athlete ID for demo user
+    const DEMO_STRAVA_ATHLETE_ID = 999999999;
+    
     if (existingUser) {
       logInfo("Demo user record already exists");
+      // Update strava_athlete_id if it's null
+      if (!existingUser.strava_athlete_id) {
+        await supabaseAdmin
+          .from("users")
+          .update({ strava_athlete_id: DEMO_STRAVA_ATHLETE_ID })
+          .eq("id", DEMO_USER_ID);
+        logInfo("Updated demo user with Strava athlete ID");
+      }
     } else {
       const { error: userError } = await supabaseAdmin.from("users").insert({
         id: DEMO_USER_ID,
         full_name: DEMO_USER_NAME,
-        strava_athlete_id: null,
+        strava_athlete_id: DEMO_STRAVA_ATHLETE_ID,
         sex: null,
+        email: DEMO_USER_EMAIL,
       });
 
       if (userError) {

@@ -95,7 +95,7 @@ export default function RoutesPage() {
           }}
         >
           <Paper sx={{ p: 2, mb: 2, flexShrink: 0 }}>
-            <Typography variant="h4" gutterBottom>
+            <Typography variant="h5" gutterBottom>
               Challenge Routes
             </Typography>
             {challenge && (
@@ -112,6 +112,17 @@ export default function RoutesPage() {
               onChange={handleStageChange}
               aria-label="stage tabs"
               variant="fullWidth"
+              sx={{
+                "& .MuiTab-root": {
+                  color: "#F4F1EC", // OUTRUN_TEXT_PRIMARY
+                  "&.Mui-selected": {
+                    color: "#0B0B0B", // OUTRUN_TEXT_SECONDARY
+                  },
+                },
+                "& .MuiTabs-indicator": {
+                  backgroundColor: "#0B0B0B", // OUTRUN_TEXT_SECONDARY
+                },
+              }}
             >
               <Tab label="Stage 1" value={1} />
               <Tab label="Stage 2" value={2} />

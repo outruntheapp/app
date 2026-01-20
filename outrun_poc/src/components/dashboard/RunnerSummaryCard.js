@@ -46,23 +46,26 @@ export default function RunnerSummaryCard() {
     .slice(0, 2);
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+    <Paper sx={{ p: 1.5 }}>
+      <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
         <Avatar
           sx={{
-            width: 56,
-            height: 56,
+            width: 40,
+            height: 40,
             bgcolor: "primary.main",
             color: "primary.contrastText",
-            mr: 2,
+            mr: 1.5,
             fontWeight: 700,
+            fontSize: "0.875rem",
           }}
         >
           {initials}
         </Avatar>
-        <Box>
-          <Typography variant="h6">{userName}</Typography>
-          <Typography variant="body2" color="text.secondary">
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="subtitle1" sx={{ fontSize: "0.95rem", fontWeight: 600 }} noWrap>
+            {userName}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
             Strava Connected
           </Typography>
         </Box>
@@ -70,15 +73,15 @@ export default function RunnerSummaryCard() {
 
       {challenge && (
         <Box>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600, mb: 0.5 }}>
             {challenge.name}
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem", mb: 0.5 }}>
             {daysRemaining !== null
               ? `Challenge ends in ${daysRemaining} ${daysRemaining === 1 ? "day" : "days"}`
               : "Challenge ended"}
           </Typography>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <Typography variant="caption" display="block" sx={{ fontSize: "0.7rem" }}>
             {new Date(challenge.starts_at).toLocaleDateString()} -{" "}
             {new Date(challenge.ends_at).toLocaleDateString()}
           </Typography>

@@ -80,48 +80,63 @@ export default function StageProgressList() {
   const completedStages = stageResults.length;
 
   return (
-    <Paper sx={{ p: 2 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-        <Typography variant="h6">Stage Progress</Typography>
+    <Paper sx={{ p: 1.5 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+        <Typography variant="subtitle1" sx={{ fontSize: "0.95rem", fontWeight: 600 }}>
+          Stage Progress
+        </Typography>
         <Chip
-          label={`${completedStages}/3 completed`}
+          label={`${completedStages}/3`}
           color={completedStages === 3 ? "success" : "default"}
           size="small"
+          sx={{ fontSize: "0.7rem", height: "20px" }}
         />
       </Box>
-      <List>
+      <List sx={{ py: 0 }}>
         {[1, 2, 3].map((stageNum) => {
           const status = getStageStatus(stageNum);
           return (
             <ListItem
               key={stageNum}
               sx={{
-                borderLeft: status.completed ? "3px solid" : "3px solid transparent",
+                borderLeft: status.completed ? "2px solid" : "2px solid transparent",
                 borderColor: status.completed ? "success.main" : "transparent",
-                mb: 1,
+                mb: 0.5,
+                py: 0.75,
+                px: 1,
                 bgcolor: status.completed ? "rgba(76, 175, 80, 0.1)" : "transparent",
                 borderRadius: 1,
               }}
             >
-              <ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 32 }}>
                 {status.completed ? (
-                  <CheckCircleIcon color="success" />
+                  <CheckCircleIcon color="success" sx={{ fontSize: "1.2rem" }} />
                 ) : (
-                  <RadioButtonUncheckedIcon color="disabled" />
+                  <RadioButtonUncheckedIcon color="disabled" sx={{ fontSize: "1.2rem" }} />
                 )}
               </ListItemIcon>
               <ListItemText
-                primary={`Stage ${stageNum}`}
-                secondary={
-                  status.completed
-                    ? `Completed in ${formatTime(status.time)} • ${new Date(
-                        status.date
-                      ).toLocaleDateString()}`
-                    : "Not completed"
+                primary={
+                  <Typography variant="body2" sx={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                    Stage {stageNum}
+                  </Typography>
                 }
+                secondary={
+                  <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
+                    {status.completed
+                      ? `${formatTime(status.time)} • ${new Date(status.date).toLocaleDateString()}`
+                      : "Not completed"}
+                  </Typography>
+                }
+                sx={{ "& .MuiListItemText-secondary": { mt: 0.25 } }}
               />
               {status.completed && (
-                <Chip label={formatTime(status.time)} size="small" color="success" />
+                <Chip
+                  label={formatTime(status.time)}
+                  size="small"
+                  color="success"
+                  sx={{ fontSize: "0.65rem", height: "20px", ml: 1 }}
+                />
               )}
             </ListItem>
           );

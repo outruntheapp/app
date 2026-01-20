@@ -66,16 +66,16 @@ export default function RankCard() {
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+    <Paper sx={{ p: 1.5 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", display: "block", mb: 1 }}>
         Your Leaderboard Position
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, mb: 2 }}>
-        <Typography variant="h3" component="span">
+      <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.75, mb: 1.5 }}>
+        <Typography variant="h4" component="span" sx={{ fontSize: "1.75rem", fontWeight: 700 }}>
           {getRankDisplay()}
         </Typography>
         {rank && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
             {getRankSuffix(rank)} place
           </Typography>
         )}
@@ -85,10 +85,11 @@ export default function RankCard() {
           label={`Out of ${totalParticipants} ${totalParticipants === 1 ? "participant" : "participants"}`}
           size="small"
           variant="outlined"
+          sx={{ fontSize: "0.7rem", height: "22px" }}
         />
       )}
       {rank === null && (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", display: "block", mt: 0.5 }}>
           Complete stages to appear on the leaderboard
         </Typography>
       )}

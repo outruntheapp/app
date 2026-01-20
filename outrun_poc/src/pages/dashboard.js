@@ -33,7 +33,8 @@ export default function DashboardPage() {
         <Container
           maxWidth="sm"
           sx={{
-            py: 2,
+            py: 1.5,
+            px: { xs: 1.5, sm: 2 },
             display: "flex",
             flexDirection: "column",
             height: "100%",
@@ -43,7 +44,7 @@ export default function DashboardPage() {
           }}
         >
           <Stack
-            spacing={2}
+            spacing={1.5}
             sx={{
               flex: 1,
               minHeight: 0,
@@ -57,11 +58,13 @@ export default function DashboardPage() {
             <RankCard />
             
             {/* View Full Leaderboard CTA */}
-            <Box sx={{ display: "flex", justifyContent: "center", mt: "auto", pt: 2 }}>
+            <Box sx={{ display: "flex", justifyContent: "center", mt: "auto", pt: 1.5 }}>
               <Button
                 variant="outlined"
                 onClick={() => router.push("/leaderboard")}
                 fullWidth
+                size="small"
+                sx={{ fontSize: "0.8rem", py: 0.75 }}
               >
                 View Full Leaderboard
               </Button>

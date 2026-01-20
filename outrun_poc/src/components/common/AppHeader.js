@@ -116,13 +116,13 @@ export default function AppHeader({ show = true, hideNav = false }) {
           <Image
             src={name}
             alt="OUTRUN_name"
-            width={220}
+            width={110}
             priority
           />
           <Image
             src={logo}
             alt="OUTRUN_logo"
-            width={220}
+            width={110}
             priority
           />
         </Box>

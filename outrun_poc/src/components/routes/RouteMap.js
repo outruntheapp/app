@@ -98,17 +98,19 @@ export default function RouteMap({ route, stageNumber }) {
     // Use Google Maps embed if API key is available
     if (mapData.embedUrl && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
       return (
-        <Paper sx={{ p: 0, overflow: "hidden" }}>
-          <iframe
-            width="100%"
-            height="400"
-            style={{ border: 0 }}
-            loading="lazy"
-            allowFullScreen
-            referrerPolicy="no-referrer-when-downgrade"
-            src={mapData.embedUrl}
-            title={`Stage ${stageNumber} Route Map`}
-          />
+        <Paper sx={{ p: 0, overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ flex: 1, minHeight: 0, position: "relative" }}>
+            <iframe
+              width="100%"
+              height="100%"
+              style={{ border: 0, position: "absolute", top: 0, left: 0 }}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              src={mapData.embedUrl}
+              title={`Stage ${stageNumber} Route Map`}
+            />
+          </Box>
         </Paper>
       );
     }
@@ -124,11 +126,12 @@ export default function RouteMap({ route, stageNumber }) {
     const mapUrl = `https://www.google.com/maps?q=${mapData.center.lat},${mapData.center.lon}&z=13`;
     
     return (
-      <Paper sx={{ p: 0, overflow: "hidden", position: "relative" }}>
+      <Paper sx={{ p: 0, overflow: "hidden", position: "relative", height: "100%", display: "flex", flexDirection: "column" }}>
         <Box
           sx={{
             width: "100%",
-            height: 400,
+            flex: 1,
+            minHeight: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -176,7 +179,7 @@ export default function RouteMap({ route, stageNumber }) {
 
   // Fallback if no route data
   return (
-    <Paper sx={{ p: 2, textAlign: "center" }}>
+    <Paper sx={{ p: 2, textAlign: "center", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Typography variant="body2" color="text.secondary">
         Route coordinates not available for this stage
       </Typography>

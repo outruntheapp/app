@@ -1,20 +1,40 @@
 // src/components/common/AppHeader.js
 // Purpose: Global application header with OUTRUN branding and navigation
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { AppBar, Toolbar, Box, Button, Menu, MenuItem, IconButton, useMediaQuery, useTheme } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import Image from "next/image";
 import Link from "next/link";
-import header from "../../assets/header.png";
+import name from "../../assets/name.png";
+import logo from "../../assets/logo.png";
+import RulesDialog from "./RulesDialog";
+import { fetchActiveChallenge } from "../../services/challengeService";
 
 export default function AppHeader({ show = true, hideNav = false }) {
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [challenge, setChallenge] = useState(null);
   const isLandingPage = router.pathname === "/";
+
+  useEffect(() => {
+    if (!isLandingPage) {
+      loadChallenge();
+    }
+  }, [isLandingPage]);
+
+  const loadChallenge = async () => {
+    try {
+      const challengeData = await fetchActiveChallenge();
+      setChallenge(challengeData);
+    } catch (err) {
+      console.error("Failed to load challenge data", err);
+    }
+  };
 
   if (!show) return null;
 
@@ -35,6 +55,11 @@ export default function AppHeader({ show = true, hideNav = false }) {
   const handleNavClick = (path) => {
     handleMobileMenuClose();
     router.push(path);
+  };
+
+  const handleRulesClick = () => {
+    handleMobileMenuClose();
+    setRulesOpen(true);
   };
 
   return (
@@ -62,10 +87,11 @@ export default function AppHeader({ show = true, hideNav = false }) {
           px: { xs: 2, sm: 3 },
         }}
       >
-        {/* Header Image - Centered */}
+        {/* Name and Logo - Centered, stacked vertically */}
         <Box
           sx={{
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
             flex: 1,
@@ -73,20 +99,31 @@ export default function AppHeader({ show = true, hideNav = false }) {
             left: 0,
             right: 0,
             pointerEvents: "none",
+            gap: 0,
+            "& > span": {
+              display: "block !important",
+              margin: "0 !important",
+              padding: "0 !important",
+              lineHeight: 0,
+            },
+            "& > span > img": {
+              display: "block !important",
+              margin: "0 !important",
+              padding: "0 !important",
+            },
           }}
         >
           <Image
-            src={header}
-            alt="OUTRUN"
-            width={300}
-            height={80}
+            src={name}
+            alt="OUTRUN_name"
+            width={220}
             priority
-            style={{
-              width: "100%",
-              maxWidth: "400px",
-              height: "auto",
-              objectFit: "contain",
-            }}
+          />
+          <Image
+            src={logo}
+            alt="OUTRUN_logo"
+            width={220}
+            priority
           />
         </Box>
 
@@ -124,15 +161,31 @@ export default function AppHeader({ show = true, hideNav = false }) {
                       {link.label}
                     </MenuItem>
                   ))}
+                  <MenuItem onClick={handleRulesClick}>Rules</MenuItem>
                 </Menu>
               </>
             ) : (
-              navLinks.map((link) => (
+              <>
+                {navLinks.map((link) => (
+                  <Button
+                    key={link.path}
+                    component={Link}
+                    href={link.path}
+                    color="inherit"
+                    sx={{
+                      color: "white",
+                      textTransform: "none",
+                      "&:hover": {
+                        backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      },
+                    }}
+                  >
+                    {link.label}
+                  </Button>
+                ))}
                 <Button
-                  key={link.path}
-                  component={Link}
-                  href={link.path}
                   color="inherit"
+                  onClick={handleRulesClick}
                   sx={{
                     color: "white",
                     textTransform: "none",
@@ -141,13 +194,19 @@ export default function AppHeader({ show = true, hideNav = false }) {
                     },
                   }}
                 >
-                  {link.label}
+                  Rules
                 </Button>
-              ))
+              </>
             )}
           </Box>
         )}
       </Toolbar>
+
+      <RulesDialog
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        challenge={challenge}
+      />
     </AppBar>
   );
 }

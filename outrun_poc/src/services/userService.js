@@ -4,38 +4,39 @@
 import { supabase } from "./supabaseClient";
 import { logError } from "../utils/logger";
 import { isDemoMode, getDemoUser } from "../utils/demoMode";
+import { DEMO_USER_ID } from "../../demo/demoData";
 
 export async function fetchCurrentUser() {
   try {
-    // Check if demo mode is enabled
+    // Prioritize real auth user: if signed in and not demo user, show that user only
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+
+    if (authUser && authUser.id !== DEMO_USER_ID) {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
+      if (error) throw error;
+      return data;
+    }
+
+    // Otherwise use demo user only when demo mode is on
     if (isDemoMode()) {
       const demoUser = await getDemoUser();
       if (demoUser) {
-        // Try to fetch demo user from database, or return demo user object
         const { data } = await supabase
           .from("users")
           .select("*")
           .eq("id", demoUser.id)
           .single();
-        
         return data || demoUser;
       }
     }
 
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-
-    if (!authUser) return null;
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", authUser.id)
-      .single();
-
-    if (error) throw error;
-    return data;
+    return null;
   } catch (err) {
     logError("Failed to fetch current user", err);
     return null;

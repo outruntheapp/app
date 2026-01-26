@@ -1,6 +1,7 @@
 // src/pages/_app.js
 // Purpose: Global app wrapper (theme, providers)
 
+import "leaflet/dist/leaflet.css";
 import { useEffect } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";

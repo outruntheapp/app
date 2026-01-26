@@ -18,7 +18,7 @@ export const OUTRUN_BURNT = "#C45A2A";
 export const OUTRUN_CHARCOAL = "#2A2A2A";
 export const OUTRUN_BLACK = "#0B0B0B";
 export const OUTRUN_TEXT_PRIMARY = "#F4F1EC";
-export const OUTRUN_TEXT_SECONDARY = "rgb(210, 218, 211)";
+export const OUTRUN_TEXT_SECONDARY = "#0B0B0B";
 
 const theme = createTheme({
   palette: {
@@ -117,7 +117,7 @@ const theme = createTheme({
           fontWeight: 700,
           textTransform: "uppercase",
           fontSize: "0.75rem",
-          color: OUTRUN_TEXT_SECONDARY,
+          color: OUTRUN_TEXT_PRIMARY,
         },
       },
     },

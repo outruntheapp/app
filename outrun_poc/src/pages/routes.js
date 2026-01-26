@@ -2,10 +2,12 @@
 // Purpose: Display challenge routes with GPX maps
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { Container, Stack, Typography, Paper, Box, Divider, Tabs, Tab } from "@mui/material";
 import AppHeader from "../components/common/AppHeader";
-import RouteMap from "../components/routes/RouteMap";
 import { fetchRoutesForMap } from "../services/routeService";
+
+const RouteMap = dynamic(() => import("../components/RouteMap"), { ssr: false });
 import { fetchActiveChallenge } from "../services/challengeService";
 import LoadingState from "../components/common/LoadingState";
 import { OUTRUN_WHITE, OUTRUN_BLACK } from "../styles/theme";
@@ -159,7 +161,7 @@ export default function RoutesPage() {
                 </Box>
                 <Divider sx={{ mb: 2, flexShrink: 0 }} />
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <RouteMap route={selectedRoute} stageNumber={selectedStage} />
+                  <RouteMap challenge="challenge_1" stage={`stage-${selectedStage}`} />
                 </Box>
               </Paper>
             )}

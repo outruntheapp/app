@@ -11,6 +11,8 @@ import name from "../../assets/name.png";
 import logo from "../../assets/logo.png";
 import RulesDialog from "./RulesDialog";
 import { fetchActiveChallenge } from "../../services/challengeService";
+import { supabase } from "../../services/supabaseClient";
+import { isDemoMode, disableDemoMode } from "../../utils/demoMode";
 
 export default function AppHeader({ show = true, hideNav = false }) {
   const router = useRouter();
@@ -60,6 +62,20 @@ export default function AppHeader({ show = true, hideNav = false }) {
   const handleRulesClick = () => {
     handleMobileMenuClose();
     setRulesOpen(true);
+  };
+
+  const handleLogout = async () => {
+    handleMobileMenuClose();
+    try {
+      await supabase.auth.signOut();
+      if (typeof window !== "undefined" && isDemoMode()) {
+        await disableDemoMode();
+      }
+      router.push("/");
+    } catch (err) {
+      console.error("Logout failed", err);
+      router.push("/");
+    }
   };
 
   return (
@@ -162,6 +178,7 @@ export default function AppHeader({ show = true, hideNav = false }) {
                     </MenuItem>
                   ))}
                   <MenuItem onClick={handleRulesClick}>Rules</MenuItem>
+                  <MenuItem onClick={handleLogout}>Logout</MenuItem>
                 </Menu>
               </>
             ) : (
@@ -195,6 +212,19 @@ export default function AppHeader({ show = true, hideNav = false }) {
                   }}
                 >
                   Rules
+                </Button>
+                <Button
+                  color="inherit"
+                  onClick={handleLogout}
+                  sx={{
+                    color: "white",
+                    textTransform: "none",
+                    "&:hover": {
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                    },
+                  }}
+                >
+                  Logout
                 </Button>
               </>
             )}

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMap } from "react-leaflet";
-import { Box, Typography, Paper, Button } from "@mui/material";
+import { Box, Typography, Paper } from "@mui/material";
 
 const OSM_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const ROUTE_COLOR = "#C45A2A";
@@ -48,7 +48,7 @@ function RouteContent({ geojson, bounds, meta, onGeometryLoaded }) {
   );
 }
 
-export default function RouteMap({ challenge, stage }) {
+export default function RouteMap({ challenge, stage, onGoogleMapsUrl }) {
   const [status, setStatus] = useState("loading");
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -92,9 +92,13 @@ export default function RouteMap({ challenge, stage }) {
         })()
       : null;
 
+  useEffect(() => {
+    onGoogleMapsUrl?.(googleMapsUrl || null);
+  }, [googleMapsUrl, onGoogleMapsUrl]);
+
   if (status === "loading") {
     return (
-      <Paper sx={{ p: 2, textAlign: "center", height: "100%", minHeight: 280, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Paper sx={{ p: 2, textAlign: "center", height: "100%", minHeight: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Typography variant="body2" color="text.secondary">
           Loading map…
         </Typography>
@@ -104,7 +108,7 @@ export default function RouteMap({ challenge, stage }) {
 
   if (status === "error") {
     return (
-      <Paper sx={{ p: 2, textAlign: "center", height: "100%", minHeight: 280, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Paper sx={{ p: 2, textAlign: "center", height: "100%", minHeight: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Typography variant="body2" color="text.secondary">
           {error}
         </Typography>
@@ -114,21 +118,7 @@ export default function RouteMap({ challenge, stage }) {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-      {googleMapsUrl && (
-        <Box sx={{ flexShrink: 0, mb: 1 }}>
-          <Button
-            component="a"
-            href={googleMapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="outlined"
-            size="small"
-          >
-            View on Google Maps
-          </Button>
-        </Box>
-      )}
-      <Box sx={{ flex: 1, minHeight: 280, borderRadius: 1, overflow: "hidden" }}>
+      <Box sx={{ height: 200, flexShrink: 0, borderRadius: 1, overflow: "hidden" }}>
         <MapContainer
           style={{ height: "100%", width: "100%" }}
           center={[data.bounds[0][0], data.bounds[0][1]]}

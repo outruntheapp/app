@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Container, Stack, Typography, Paper, Box, Divider, Tabs, Tab } from "@mui/material";
+import { Container, Typography, Paper, Box, Divider, Tabs, Tab, Button } from "@mui/material";
 import AppHeader from "../components/common/AppHeader";
 import { fetchRoutesForMap } from "../services/routeService";
 
@@ -17,6 +17,7 @@ export default function RoutesPage() {
   const [challenge, setChallenge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedStage, setSelectedStage] = useState(1);
+  const [googleMapsUrl, setGoogleMapsUrl] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -46,6 +47,7 @@ export default function RoutesPage() {
 
   const handleStageChange = (event, newValue) => {
     setSelectedStage(newValue);
+    setGoogleMapsUrl(null);
   };
 
   if (loading) {
@@ -149,19 +151,33 @@ export default function RoutesPage() {
               </Paper>
             ) : (
               <Paper sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}>
-                <Box sx={{ mb: 2, flexShrink: 0 }}>
-                  <Typography variant="h5" gutterBottom>
-                    Stage {selectedStage}
-                  </Typography>
-                  {selectedRoute && (
-                    <Typography variant="body2" color="text.secondary">
-                      Buffer: {selectedRoute.buffer_meters}m • Min Overlap: {(selectedRoute.min_overlap_ratio ?? 0.8) * 100}%
+                <Box sx={{ mb: 2, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1 }}>
+                  <Box>
+                    <Typography variant="h5" gutterBottom>
+                      Stage {selectedStage}
                     </Typography>
+                    {selectedRoute && (
+                      <Typography variant="body2" color="text.secondary">
+                        Buffer: {selectedRoute.buffer_meters}m • Min Overlap: {(selectedRoute.min_overlap_ratio ?? 0.8) * 100}%
+                      </Typography>
+                    )}
+                  </Box>
+                  {googleMapsUrl && (
+                    <Button
+                      component="a"
+                      href={googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variant="outlined"
+                      size="small"
+                    >
+                      View on Google Maps
+                    </Button>
                   )}
                 </Box>
                 <Divider sx={{ mb: 2, flexShrink: 0 }} />
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <RouteMap challenge="challenge_1" stage={`stage-${selectedStage}`} />
+                  <RouteMap challenge="challenge_1" stage={`stage-${selectedStage}`} onGoogleMapsUrl={setGoogleMapsUrl} />
                 </Box>
               </Paper>
             )}

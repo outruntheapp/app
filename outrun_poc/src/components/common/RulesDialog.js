@@ -187,14 +187,14 @@ export default function RulesDialog({ open, onClose, challenge }) {
           </Typography>
           
           <Box sx={{ mb: 2, mt: 1 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            <Typography variant="subtitle2" color="OUTRUN_BURNT" gutterBottom>
               Start Date
             </Typography>
             <Typography variant="body2">{formatDate(challenge.starts_at)}</Typography>
           </Box>
 
           <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            <Typography variant="subtitle2" color="OUTRUN_BURNT" gutterBottom>
               End Date
             </Typography>
             <Typography variant="body2">{formatDate(challenge.ends_at)}</Typography>
@@ -204,7 +204,7 @@ export default function RulesDialog({ open, onClose, challenge }) {
             variant="body2"
             sx={{
               fontStyle: "italic",
-              color: "text.secondary",
+              color: "OUTRUN_BURNT",
               mt: 2,
               textAlign: "center",
             }}

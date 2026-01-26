@@ -104,7 +104,7 @@ export default function RoutesPage() {
               Challenge Routes
             </Typography>
             {challenge && (
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" color="text.primary">
                 {challenge.name}
               </Typography>
             )}
@@ -157,7 +157,7 @@ export default function RoutesPage() {
                       Stage {selectedStage}
                     </Typography>
                     {selectedRoute && (
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.primary">
                         Buffer: {selectedRoute.buffer_meters}m • Min Overlap: {(selectedRoute.min_overlap_ratio ?? 0.8) * 100}%
                       </Typography>
                     )}

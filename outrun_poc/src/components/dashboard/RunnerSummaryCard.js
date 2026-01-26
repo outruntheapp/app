@@ -65,7 +65,7 @@ export default function RunnerSummaryCard() {
           <Typography variant="subtitle1" sx={{ fontSize: "0.95rem", fontWeight: 600 }} noWrap>
             {userName}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+          <Typography variant="caption" color="text.primary" sx={{ fontSize: "0.75rem" }}>
             Strava Connected
           </Typography>
         </Box>
@@ -76,7 +76,7 @@ export default function RunnerSummaryCard() {
           <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600, mb: 0.5 }}>
             {challenge.name}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem", mb: 0.5 }}>
+          <Typography variant="body2" color="text.primary" sx={{ fontSize: "0.8rem", mb: 0.5 }}>
             {daysRemaining !== null
               ? `Challenge ends in ${daysRemaining} ${daysRemaining === 1 ? "day" : "days"}`
               : "Challenge ended"}

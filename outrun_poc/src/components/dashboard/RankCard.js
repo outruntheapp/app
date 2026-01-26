@@ -67,7 +67,7 @@ export default function RankCard() {
 
   return (
     <Paper sx={{ p: 1.5 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", display: "block", mb: 1 }}>
+      <Typography variant="caption" color="text.primary" sx={{ fontSize: "0.7rem", display: "block", mb: 1 }}>
         Your Leaderboard Position
       </Typography>
       <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.75, mb: 1.5 }}>
@@ -89,7 +89,7 @@ export default function RankCard() {
         />
       )}
       {rank === null && (
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", display: "block", mt: 0.5 }}>
+        <Typography variant="caption" color="text.primary" sx={{ fontSize: "0.7rem", display: "block", mt: 0.5 }}>
           Complete stages to appear on the leaderboard
         </Typography>
       )}

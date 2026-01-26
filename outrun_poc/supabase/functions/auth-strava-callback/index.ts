@@ -238,12 +238,23 @@ serve(async (req) => {
         .single();
 
       if (!existingParticipant) {
-        await supabaseAdmin.from("participants").insert({
-          user_id: userId,
-          challenge_id: activeChallenge.id,
-          excluded: false,
-        });
-        logInfo("Created participant record during Strava auth", { userId });
+        const { error: participantInsertError } = await supabaseAdmin
+          .from("participants")
+          .insert({
+            user_id: userId,
+            challenge_id: activeChallenge.id,
+            excluded: false,
+          });
+        if (participantInsertError) {
+          logError("Failed to create participant record during Strava auth", {
+            userId,
+            challengeId: activeChallenge.id,
+            error: participantInsertError.message,
+            code: participantInsertError.code,
+          });
+        } else {
+          logInfo("Created participant record during Strava auth", { userId });
+        }
       }
     }
 

@@ -6,8 +6,9 @@ import { logError } from "../utils/logger";
 import { fetchActiveChallenge } from "./challengeService";
 
 /**
- * Fetch all routes for the active challenge
- * Note: Supabase PostgREST automatically converts PostGIS geography to GeoJSON format
+ * Fetch all routes for the active challenge.
+ * Uses Supabase routes table when available; falls back to local GPX files (via API)
+ * when the routes table is empty so the Routes page can still display stages.
  */
 export async function fetchActiveChallengeRoutes() {
   try {
@@ -23,7 +24,18 @@ export async function fetchActiveChallengeRoutes() {
       .order("stage_number", { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    const fromDb = data || [];
+
+    if (fromDb.length > 0) {
+      return fromDb;
+    }
+
+    // Fallback: load routes from local GPX files (routes/challenge_1) via API
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const res = await fetch(`${baseUrl}/api/routes`);
+    if (!res.ok) return [];
+    const fromApi = await res.json();
+    return Array.isArray(fromApi) ? fromApi : [];
   } catch (err) {
     logError("Failed to fetch routes", err);
     return [];

@@ -138,28 +138,28 @@ export default function RoutesPage() {
               overflow: "auto",
             }}
           >
-            <Paper sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}>
-              <Box sx={{ mb: 2, flexShrink: 0 }}>
-                <Typography variant="h5" gutterBottom>
-                  Stage {selectedStage}
-                </Typography>
-                {selectedRoute && (
-                  <Typography variant="body2" color="text.secondary">
-                    Buffer: {selectedRoute.buffer_meters}m • Min Overlap: {selectedRoute.min_overlap_ratio * 100}%
-                  </Typography>
-                )}
-              </Box>
-              <Divider sx={{ mb: 2, flexShrink: 0 }} />
-              <Box sx={{ flex: 1, minHeight: 0 }}>
-                <RouteMap route={selectedRoute} stageNumber={selectedStage} />
-              </Box>
-            </Paper>
-
-            {routes.length === 0 && (
+            {routes.length === 0 ? (
               <Paper sx={{ p: 3, textAlign: "center" }}>
                 <Typography variant="body1" color="text.secondary">
                   No routes available for the active challenge
                 </Typography>
+              </Paper>
+            ) : (
+              <Paper sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}>
+                <Box sx={{ mb: 2, flexShrink: 0 }}>
+                  <Typography variant="h5" gutterBottom>
+                    Stage {selectedStage}
+                  </Typography>
+                  {selectedRoute && (
+                    <Typography variant="body2" color="text.secondary">
+                      Buffer: {selectedRoute.buffer_meters}m • Min Overlap: {(selectedRoute.min_overlap_ratio ?? 0.8) * 100}%
+                    </Typography>
+                  )}
+                </Box>
+                <Divider sx={{ mb: 2, flexShrink: 0 }} />
+                <Box sx={{ flex: 1, minHeight: 0 }}>
+                  <RouteMap route={selectedRoute} stageNumber={selectedStage} />
+                </Box>
               </Paper>
             )}
           </Box>

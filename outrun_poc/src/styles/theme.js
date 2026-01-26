@@ -13,10 +13,10 @@ Moss green: #4F6F52
 */
 
 const OUTRUN_WHITE = "#F4F1EC";
-const OUTRUN_BLACK = "#0B0B0B";
+const OUTRUN_BURNT = "#C45A2A";
 const OUTRUN_CHARCOAL = "#2A2A2A";
-const OUTRUN_TEXT_PRIMARY = "#C45A2A";
-const OUTRUN_TEXT_SECONDARY = "#F4F1EC";
+const OUTRUN_TEXT_PRIMARY = "#F4F1EC";
+const OUTRUN_TEXT_SECONDARY = "#0B0B0B";
 
 export const theme = createTheme({
   palette: {
@@ -24,17 +24,17 @@ export const theme = createTheme({
 
     primary: {
       main: OUTRUN_WHITE,
-      contrastText: OUTRUN_BLACK,
+      contrastText: OUTRUN_TEXT_SECONDARY,
     },
 
     background: {
-      default: OUTRUN_TEXT_PRIMARY,
+      default: OUTRUN_BURNT,
       paper: OUTRUN_CHARCOAL,
     },
 
     text: {
       primary: OUTRUN_WHITE,
-      secondary: OUTRUN_BLACK,
+      secondary: OUTRUN_TEXT_SECONDARY,
     },
 
     divider: "rgba(255, 255, 255, 0.08)",
@@ -70,7 +70,7 @@ export const theme = createTheme({
     },
 
     body2: {
-      color: OUTRUN_TEXT_SECONDARY,
+      color: OUTRUN_TEXT_PRIMARY,
     },
 
     button: {
@@ -115,7 +115,7 @@ export const theme = createTheme({
           fontWeight: 700,
           textTransform: "uppercase",
           fontSize: "0.75rem",
-          color: OUTRUN_BLACK,
+          color: OUTRUN_TEXT_SECONDARY,
         },
       },
     },

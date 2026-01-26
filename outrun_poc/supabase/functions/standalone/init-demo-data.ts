@@ -67,6 +67,23 @@ serve(async (req) => {
   try {
     logInfo("Initializing demo data");
 
+    // Optional: use polylines from request body (route-matching geometry from GPX)
+    let body: { polylines?: Record<number, string> } = {};
+    try {
+      body = await req.json();
+    } catch {
+      // No body or invalid JSON: use placeholder polylines
+    }
+    const defaultPolylines = { 1: "k~{mHw`|bM", 2: "k~{mHw`|bN", 3: "k~{mHw`|bO" };
+    const usePolylines =
+      body.polylines &&
+      typeof body.polylines === "object" &&
+      typeof body.polylines[1] === "string" &&
+      typeof body.polylines[2] === "string" &&
+      typeof body.polylines[3] === "string"
+        ? body.polylines
+        : defaultPolylines;
+
     // Get active challenge
     const { data: challenge, error: challengeError } = await supabaseAdmin
       .from("challenges")
@@ -167,11 +184,7 @@ serve(async (req) => {
     const now = Date.now();
     const activities = [];
     const stageTimes = { 1: 3600, 2: 4200, 3: 3900 }; // 1h, 1h10m, 1h5m
-    const polylines = {
-      1: "k~{mHw`|bM",
-      2: "k~{mHw`|bN",
-      3: "k~{mHw`|bO",
-    };
+    const polylines = usePolylines;
 
     // Get existing activities to avoid duplicates
     const { data: existingActivities } = await supabaseAdmin

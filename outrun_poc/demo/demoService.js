@@ -12,18 +12,35 @@ function logInfo(message, meta = {}) {
 
 /**
  * Initialize demo data in Supabase via edge function
- * Creates demo user, participant, activities, and stage results
+ * Creates demo user, participant, activities, and stage results.
+ * Fetches route-matching polylines from API so demo activities match GPX routes.
  */
 export async function initializeDemoData() {
   try {
     logInfo("Initializing demo data via edge function...");
-    
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
+
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error("Supabase URL or anon key not configured");
     }
+
+    // Get polylines from route GPX so demo activities match routes (optional; falls back in Edge)
+    let polylines = null;
+    try {
+      const polyRes = await fetch("/api/demo-polylines");
+      if (polyRes.ok) {
+        const data = await polyRes.json();
+        if (data && typeof data[1] === "string" && typeof data[2] === "string" && typeof data[3] === "string") {
+          polylines = { 1: data[1], 2: data[2], 3: data[3] };
+        }
+      }
+    } catch (e) {
+      logInfo("Demo polylines not available, using defaults", e);
+    }
+
+    const body = polylines ? { polylines } : {};
 
     // Call init-demo-data edge function
     const response = await fetch(`${supabaseUrl}/functions/v1/init-demo-data`, {
@@ -32,6 +49,7 @@ export async function initializeDemoData() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${supabaseAnonKey}`,
       },
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

@@ -33,9 +33,12 @@ This repository represents a **validation-focused MVP / proof of concept**, desi
 outrun_poc/
 ├── instructions/      # Documentation (deployment, setup, troubleshooting)
 │   ├── DEMO_MODE.md
-│   ├── DEPLOYMENT.md
+│   ├── DEPLOYMENT_QUICK_START.md  # Primary deployment checklist
+│   ├── SUPABASE_DEPLOYMENT.md
+│   ├── VERCEL_ENV_SETUP.md
+│   ├── FIRST_RUN_CHECKLIST.md
 │   ├── STRAVA_ERROR_FIX.md
-│   └── ... (other setup guides)
+│   └── ... (APP_FLOW_DIAGRAM, EDGE_FUNCTIONS, SQL_SCHEMA, TEST_STRAVA_RUNS, etc.)
 │
 ├── src/
 │   ├── components/        # Reusable UI components (no data access)
@@ -296,8 +299,7 @@ Without refactoring core logic.
 
 ## 🚀 Quick Start
 
-1. **Setup**: See `instructions/DEPLOYMENT_QUICK_START.md`
-2. **Demo Mode**: Click "Demo Mode OFF" chip in top-right corner to enable
-3. **Development**: All documentation in `instructions/` directory
-4. **App Flow**: See `instructions/APP_FLOW_DIAGRAM.md` for complete application flow and roadmap
-5. **Troubleshooting**: Check `instructions/STRAVA_ERROR_FIX.md` for common issues
+1. **Deploy**: `outrun_poc/instructions/DEPLOYMENT_QUICK_START.md` (Supabase + Vercel). For full verification order use `FIRST_RUN_CHECKLIST.md`.
+2. **Env**: `VERCEL_ENV_SETUP.md` (Vercel); Supabase secrets per `SUPABASE_DEPLOYMENT.md`.
+3. **Demo**: Click "Demo Mode OFF" on landing to test without Strava; see `DEMO_MODE.md`.
+4. **Flow**: `APP_FLOW_DIAGRAM.md` — app flow and roles. Troubleshooting: `STRAVA_ERROR_FIX.md`.

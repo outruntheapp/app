@@ -1,6 +1,6 @@
-# Route Upload Scripts
+# outrun_poc/scripts — CLI helpers
 
-## Upload GPX Routes to Supabase
+## upload-routes.js — Upload GPX routes to Supabase
 
 This script reads GPX files from `routes/{challenge_name}/` and converts them to PostGIS format for insertion into Supabase.
 
@@ -84,3 +84,13 @@ This will list all challenge directories found in `routes/`.
 - If a route already exists for a stage, it will update it
 - Coordinates are converted from GPX format (lat, lon) to PostGIS format (lon, lat)
 - Buffer meters default to 30m, overlap ratio to 0.8 (80%)
+
+## ingest-strava-activity.js — Insert one activity for testing
+
+Inserts a single activity from a JSON file (for testing route matching with real Strava-style data). See **instructions/TEST_STRAVA_RUNS.md**.
+
+```bash
+node scripts/ingest-strava-activity.js path/to/activity.json
+```
+
+Requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (or `NEXT_PUBLIC_*` / `SERVICE_ROLE_KEY`). JSON must include `user_id`, `polyline`, `started_at`, `elapsed_seconds`.

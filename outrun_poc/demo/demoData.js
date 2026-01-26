@@ -24,14 +24,13 @@ export const DEMO_STAGE_TIMES = {
   3: 3900,  // 1 hour 5 minutes for stage 3
 };
 
-// Demo activity data - simplified polylines for each stage
-// These are minimal encoded polylines for demo purposes
-// In production, these would be derived from the actual GPX files
-// Format: Google Maps encoded polyline (simplified for demo)
+// Demo activity data - fallback polylines when API/GPX not used
+// Prefer route-matching polylines from generate-demo-polylines.js / GET /api/demo-polylines
+// so demo activities match routes in match_activity_to_route. Format: Google encoded polyline.
 export const DEMO_POLYLINES = {
-  1: "k~{mHw`|bM",  // Simple demo polyline for stage 1
-  2: "k~{mHw`|bN",  // Simple demo polyline for stage 2  
-  3: "k~{mHw`|bO",  // Simple demo polyline for stage 3
+  1: "k~{mHw`|bM",  // Placeholder for stage 1
+  2: "k~{mHw`|bN",  // Placeholder for stage 2
+  3: "k~{mHw`|bO",  // Placeholder for stage 3
 };
 
 // Generate demo activity dates (within challenge window)

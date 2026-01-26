@@ -68,4 +68,4 @@ Report generated from static analysis and build/lint runs. No code was changed f
 | Routes page       | Yes             | DB routes or /api/routes + routes/challenge_1/*.gpx in deploy |
 | Activity pipeline | Yes             | Cron + Edge sync/process + match_activity_to_route + routes seeded from GPX |
 
-No automated unit/integration tests were run; `package.json` has no `test` script. Manual E2E and deployed-env checks (Vercel + Supabase) are needed to confirm in production.
+`package.json` includes a `test` script (Jest; unit tests in `__tests__/polyline.test.js`). Manual E2E and deployed-env checks (Vercel + Supabase) still recommended for production.

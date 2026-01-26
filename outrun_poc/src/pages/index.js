@@ -225,12 +225,6 @@ export default function LandingPage() {
                     You need to join the challenge to connect Strava.
                   </Alert>
                 )}
-
-                {(isParticipant || demoMode) && (
-                  <Box sx={{ mt: 1 }}>
-                    <StravaConnectButton />
-                  </Box>
-                )}
               </>
             ) : (
               <>

@@ -430,6 +430,29 @@ leaderboard_stage (VIEW)
 
 ---
 
+## 🔐 Supabase roles and scripts by stage
+
+| Stage | Supabase role / client | RPC / DB functions | Edge functions | Migrations / scripts |
+|--------|-------------------------|---------------------|----------------|----------------------|
+| **Landing – check Strava by email** | `anon` or `authenticated` (browser) | `check_strava_connection_by_email(email)` (SECURITY DEFINER) | — | `04_check_strava_by_email.sql` |
+| **Landing – OAuth callback** | `anon` (Bearer anon key) | — | `auth-strava-callback` (uses service_role internally) | `01_initial_schema.sql` (users, participants, strava_tokens); `06_ensure_participants_for_existing_users.sql` (backfill) |
+| **Dashboard – current user & rank** | `authenticated` | — | — | RLS: `users_read_self`, `users_read_leaderboard`; `leaderboard_overall` view |
+| **Leaderboard** | `authenticated` | — | — | RLS: `users_read_leaderboard`, `participants_read_leaderboard`, `stage_results_read_leaderboard`; views: `leaderboard_overall`, `leaderboard_stage` |
+| **Routes page – from DB** | `authenticated` | — | — | `01_initial_schema` (routes table); `02_insert_routes_challenge_1.sql`, `03_demo_test_route.sql` |
+| **Routes page – from files** | — | — | — | Next.js API route `pages/api/routes.js` (reads `./routes/challenge_1/stage-*.gpx`) |
+| **Sync activities** | service_role (Edge) | — | `sync-strava-activities` (cron) | `01_initial_schema` (activities, strava_tokens) |
+| **Process activities** | service_role (Edge) | `match_activity_to_route(activity_polyline, route_id)` | `process-activities` (cron) | `match_activity_to_route.sql`; `01_initial_schema` (routes, stage_results) |
+| **Admin exclude user** | `authenticated` (admin JWT) | — | `admin-exclude-user` | RLS: `participants_admin_update`; `01_initial_schema` (audit_logs) |
+| **Demo mode** | `anon` then `authenticated` | — | `init-demo-data`, `demo-auth` | `01_initial_schema`; demo data in `init-demo-data` |
+| **Seed routes from GPX** | — | — | — | Script: `scripts/upload-routes.js` (generates SQL from `routes/challenge_*/stage-*.gpx`) |
+
+**Roles summary:**
+- **anon**: Landing (check Strava by email, trigger OAuth callback).
+- **authenticated**: Dashboard, leaderboard, routes (DB), admin exclude; RLS policies limit rows to permitted data.
+- **service_role** (Edge only): sync-strava-activities, process-activities, auth-strava-callback (create user/tokens/participant).
+
+---
+
 ## 🎯 Future Enhancement Areas
 
 ### Planned Features (Not in MVP)

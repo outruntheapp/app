@@ -1,17 +1,21 @@
 // scripts/upload-routes.js
-// Purpose: Read GPX files from routes/{challenge_name}/ and upload to Supabase
+// Purpose: Read GPX files from routes/{challenge_name}/ and upload to Supabase.
+// Reason: Route geometry in the DB must match the GPX files used for display and
+// for Strava activity matching; this script generates SQL (or guides upload) so
+// routes.gpx_geo is populated from stage-*.gpx.
 
 const fs = require('fs');
 const path = require('path');
 const { parseString } = require('xml2js');
 const { createClient } = require('@supabase/supabase-js');
 
-// Configuration
+// Configuration: routes live under project root routes/<challenge_name>/stage-N.gpx
 const ROUTES_DIR = path.join(__dirname, '..', 'routes');
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
 
-// Parse GPX file and extract coordinates
+// Parse GPX file and extract coordinates (from <trkpt lat="" lon="">).
+// Returns array of [lon, lat] for PostGIS LINESTRING order.
 function parseGPXFile(filePath) {
   return new Promise((resolve, reject) => {
     const gpxContent = fs.readFileSync(filePath, 'utf8');
@@ -54,7 +58,8 @@ function coordinatesToLineString(coordinates) {
   return `LINESTRING(${points})`;
 }
 
-// Find all challenge directories
+// Find all challenge directories under ROUTES_DIR (e.g. challenge_1).
+// Used when no <challenge_name> arg is given, to list available challenges.
 function findChallengeDirectories() {
   if (!fs.existsSync(ROUTES_DIR)) {
     throw new Error(`Routes directory not found: ${ROUTES_DIR}`);
@@ -103,7 +108,9 @@ async function readChallengeRoutes(challengeName) {
   return routes;
 }
 
-// Generate SQL INSERT statements
+// Generate SQL INSERT statements for routes table.
+// If challengeId is provided, INSERT uses it; otherwise SELECT from active challenge.
+// Output is suitable for Supabase SQL Editor or migrations.
 function generateSQL(challengeName, routes, challengeId = null) {
   const sqlStatements = [];
   
@@ -142,7 +149,8 @@ LIMIT 1;`);
   return sqlStatements.join('\n\n');
 }
 
-// Upload routes directly to Supabase (using SQL execution)
+// Prepare upload: resolve active challenge, generate SQL, write to migrations folder.
+// Does not execute SQL (PostGIS geography requires SQL Editor or migration runner).
 async function uploadToSupabase(challengeName, routes) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
@@ -179,7 +187,8 @@ async function uploadToSupabase(challengeName, routes) {
   console.log(`\n   Or use Supabase CLI: supabase db push`);
 }
 
-// Main function
+// Main: list challenges, or read GPX for given challenge and generate SQL / run upload step.
+// Usage: node scripts/upload-routes.js [challenge_name] [sql|upload]
 async function main() {
   const args = process.argv.slice(2);
   const challengeName = args[0];

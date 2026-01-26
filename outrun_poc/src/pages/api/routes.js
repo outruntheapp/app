@@ -1,11 +1,15 @@
 // API route: return route data from local GPX files (./routes/challenge_1)
-// Used when the routes table is empty so the Routes page can still display stages.
+// Purpose: Allow the Routes page to display stage maps when the routes table is empty
+// or as a fallback. Reads stage-1.gpx, stage-2.gpx, stage-3.gpx and returns GeoJSON
+// LineString so RouteMap can render them. Same files can be used to seed the DB
+// (e.g. scripts/upload-routes.js) for Strava activity matching.
 
 import fs from "fs";
 import path from "path";
 
 /**
- * Parse GPX text and return array of { lat, lon } from <trkpt> elements.
+ * Parse GPX text and return array of { lat, lon } from <trkpt lat="" lon=""> elements.
+ * Reason: GPX uses lat/lon order; we need coords for GeoJSON and map embeds.
  */
 function parseGpxTrkpt(gpxText) {
   const coords = [];
@@ -27,6 +31,7 @@ export default function handler(req, res) {
   }
 
   try {
+    // Read from project root routes/challenge_1 (stage-1.gpx, stage-2.gpx, stage-3.gpx)
     const baseDir = path.join(process.cwd(), "routes", "challenge_1");
     const routes = [];
 

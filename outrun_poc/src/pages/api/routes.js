@@ -1,15 +1,11 @@
-// API route: return route data from local GPX files (./routes/challenge_1)
-// Purpose: Allow the Routes page to display stage maps when the routes table is empty
-// or as a fallback. Reads stage-1.gpx, stage-2.gpx, stage-3.gpx and returns GeoJSON
-// LineString so RouteMap can render them. Same files can be used to seed the DB
-// (e.g. scripts/upload-routes.js) for Strava activity matching.
+// src/pages/api/routes.js
+// Purpose: Return route data from GPX in public/routes/challenge_1 (fetched via HTTP).
+// Syncs routes into the DB via sync_challenge_routes_from_wkt so process-activities can match.
 
-import fs from "fs";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Parse GPX text and return array of { lat, lon } from <trkpt lat="" lon=""> elements.
- * Reason: GPX uses lat/lon order; we need coords for GeoJSON and map embeds.
  */
 function parseGpxTrkpt(gpxText) {
   const coords = [];
@@ -25,22 +21,43 @@ function parseGpxTrkpt(gpxText) {
   return coords;
 }
 
-export default function handler(req, res) {
+/** Build PostGIS LINESTRING WKT from coords: lon1 lat1, lon2 lat2, ... */
+function coordsToWkt(coords) {
+  if (!coords || coords.length === 0) return null;
+  const points = coords.map((c) => `${c.lon} ${c.lat}`).join(", ");
+  return `LINESTRING(${points})`;
+}
+
+function getBaseUrl(req) {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  const host = req?.headers?.host;
+  if (host) return `http://${host}`;
+  return "http://localhost:3000";
+}
+
+export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    // Read from project root routes/challenge_1 (stage-1.gpx, stage-2.gpx, stage-3.gpx)
-    const baseDir = path.join(process.cwd(), "routes", "challenge_1");
+    const baseUrl = getBaseUrl(req);
     const routes = [];
+    const wkts = { 1: null, 2: null, 3: null };
 
     for (let stage = 1; stage <= 3; stage++) {
-      const filePath = path.join(baseDir, `stage-${stage}.gpx`);
-      if (!fs.existsSync(filePath)) {
+      const url = `${baseUrl}/routes/challenge_1/stage-${stage}.gpx`;
+      let gpxText;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) continue;
+        gpxText = await response.text();
+      } catch (fetchErr) {
+        console.warn("Routes API: fetch GPX failed", url, fetchErr.message);
         continue;
       }
-      const gpxText = fs.readFileSync(filePath, "utf8");
+
       const coords = parseGpxTrkpt(gpxText);
       if (coords.length === 0) {
         routes.push({
@@ -51,7 +68,10 @@ export default function handler(req, res) {
         });
         continue;
       }
-      // GeoJSON LineString: [lon, lat] for each position
+
+      const wkt = coordsToWkt(coords);
+      if (wkt) wkts[stage] = wkt;
+
       const coordinates = coords.map((c) => [c.lon, c.lat]);
       routes.push({
         stage_number: stage,
@@ -64,7 +84,31 @@ export default function handler(req, res) {
       });
     }
 
-  return res.status(200).json(routes);
+    // Sync to DB when we have an active challenge and at least one WKT
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    const serviceRoleKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
+    if (supabaseUrl && serviceRoleKey && (wkts[1] || wkts[2] || wkts[3])) {
+      const supabase = createClient(supabaseUrl, serviceRoleKey);
+      const { data: challenge, error: challengeError } = await supabase
+        .from("challenges")
+        .select("id")
+        .eq("is_active", true)
+        .single();
+      if (!challengeError && challenge?.id) {
+        const { error: rpcError } = await supabase.rpc("sync_challenge_routes_from_wkt", {
+          p_challenge_id: challenge.id,
+          p_wkt_1: wkts[1] || null,
+          p_wkt_2: wkts[2] || null,
+          p_wkt_3: wkts[3] || null,
+        });
+        if (rpcError) {
+          console.warn("Routes API: sync RPC failed", rpcError.message);
+        }
+      }
+    }
+
+    return res.status(200).json(routes);
   } catch (err) {
     console.error("Routes API error:", err);
     return res.status(500).json({ error: "Failed to load route data" });

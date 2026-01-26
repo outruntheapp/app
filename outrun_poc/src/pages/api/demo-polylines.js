@@ -1,8 +1,6 @@
-// API route: return Google-encoded polylines for demo stages (from route GPX).
-// Purpose: Let init-demo-data create activities that match route geometry for matching.
+// src/pages/api/demo-polylines.js
+// Purpose: Return Google-encoded polylines for demo stages from public/routes/challenge_1 (fetched via HTTP).
 
-import fs from "fs";
-import path from "path";
 import { encode } from "@googlemaps/polyline-codec";
 
 const PRECISION = 5;
@@ -24,25 +22,38 @@ function parseGpxToLatLon(gpxText) {
   return coords;
 }
 
-export default function handler(req, res) {
+function getBaseUrl(req) {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  const host = req?.headers?.host;
+  if (host) return `http://${host}`;
+  return "http://localhost:3000";
+}
+
+export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const baseDir = path.join(process.cwd(), "routes", "challenge_1");
+    const baseUrl = getBaseUrl(req);
     const polylines = {};
 
     for (let stage = 1; stage <= 3; stage++) {
-      const filePath = path.join(baseDir, `stage-${stage}.gpx`);
-      if (!fs.existsSync(filePath)) {
+      const url = `${baseUrl}/routes/challenge_1/stage-${stage}.gpx`;
+      let gpxText;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) continue;
+        gpxText = await response.text();
+      } catch (fetchErr) {
+        console.warn("demo-polylines API: fetch GPX failed", url, fetchErr.message);
         continue;
       }
-      const gpxText = fs.readFileSync(filePath, "utf8");
+
       const latLon = parseGpxToLatLon(gpxText);
-      if (latLon.length === 0) {
-        continue;
-      }
+      if (latLon.length === 0) continue;
+
       polylines[stage] = encode(latLon, PRECISION);
     }
 

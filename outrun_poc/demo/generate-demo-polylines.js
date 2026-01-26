@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const { encode } = require("@googlemaps/polyline-codec");
 
-const ROUTES_DIR = path.join(__dirname, "..", "routes", "challenge_1");
+const ROUTES_DIR = path.join(__dirname, "..", "public", "routes", "challenge_1");
 const OUT_FILE = path.join(__dirname, "demoPolylines.json");
 
 /**

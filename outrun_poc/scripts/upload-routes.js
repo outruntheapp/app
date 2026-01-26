@@ -9,8 +9,8 @@ const path = require('path');
 const { parseString } = require('xml2js');
 const { createClient } = require('@supabase/supabase-js');
 
-// Configuration: routes live under project root routes/<challenge_name>/stage-N.gpx
-const ROUTES_DIR = path.join(__dirname, '..', 'routes');
+// Configuration: routes live under public/routes/<challenge_name>/stage-N.gpx
+const ROUTES_DIR = path.join(__dirname, '..', 'public', 'routes');
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
 

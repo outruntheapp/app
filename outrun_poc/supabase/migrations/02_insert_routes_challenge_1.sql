@@ -1,5 +1,6 @@
--- Routes for challenge_1
--- Generated from GPX files
+-- Routes for challenge_1 (legacy stub).
+-- Real route geometry is synced from GPX by the app: GET /api/routes fetches
+-- public/routes/challenge_1/stage-*.gpx and calls sync_challenge_routes_from_wkt (migration 07).
 
 
 -- Stage 1 for challenge_1

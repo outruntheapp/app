@@ -2,7 +2,7 @@
 // Purpose: Fetch route data from Supabase
 
 import { supabase } from "./supabaseClient";
-import { logError } from "../utils/logger";
+import { logError, logInfo } from "../utils/logger";
 import { fetchActiveChallenge } from "./challengeService";
 
 /**
@@ -23,21 +23,43 @@ export async function fetchActiveChallengeRoutes() {
       .eq("challenge_id", challenge.id)
       .order("stage_number", { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      logError("fetchActiveChallengeRoutes: Supabase routes error", error);
+      throw error;
+    }
     const fromDb = data || [];
 
-    if (fromDb.length > 0) {
+    // Prefer API (GPX) when DB has no usable geometry so the map can render
+    const hasUsableGeometry = (r) =>
+      r &&
+      (typeof r.gpx_geo === "string" ||
+        (r.gpx_geo && r.gpx_geo.type === "LineString" && Array.isArray(r.gpx_geo.coordinates) && r.gpx_geo.coordinates.length > 0));
+    const dbHasUsableRoutes = fromDb.length > 0 && fromDb.some(hasUsableGeometry);
+
+    if (dbHasUsableRoutes) {
       return fromDb;
     }
 
-    // Fallback: load routes from local GPX files (routes/challenge_1) via API
+    if (fromDb.length > 0) {
+      logInfo("fetchActiveChallengeRoutes: DB routes have no usable gpx_geo, falling back to API", {
+        count: fromDb.length,
+      });
+    }
+
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
     const res = await fetch(`${baseUrl}/api/routes`);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      logError("fetchActiveChallengeRoutes: API routes failed", { status: res.status, statusText: res.statusText });
+      return fromDb.length > 0 ? fromDb : [];
+    }
     const fromApi = await res.json();
-    return Array.isArray(fromApi) ? fromApi : [];
+    const list = Array.isArray(fromApi) ? fromApi : [];
+    if (list.length > 0) {
+      logInfo("fetchActiveChallengeRoutes: loaded routes from API", { count: list.length });
+    }
+    return list.length > 0 ? list : fromDb;
   } catch (err) {
-    logError("Failed to fetch routes", err);
+    logError("fetchActiveChallengeRoutes: failed", err);
     return [];
   }
 }

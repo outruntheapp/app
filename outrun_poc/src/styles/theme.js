@@ -12,13 +12,15 @@ Charcoal:#2A2A2A
 Moss green: #4F6F52
 */
 
-const OUTRUN_WHITE = "#F4F1EC";
-const OUTRUN_BURNT = "#C45A2A";
-const OUTRUN_CHARCOAL = "#2A2A2A";
-const OUTRUN_TEXT_PRIMARY = "#F4F1EC";
-const OUTRUN_TEXT_SECONDARY = "#0B0B0B";
+// Exported for use in components (avoid hardcoding hex)
+export const OUTRUN_WHITE = "#F4F1EC";
+export const OUTRUN_BURNT = "#C45A2A";
+export const OUTRUN_CHARCOAL = "#2A2A2A";
+export const OUTRUN_BLACK = "#0B0B0B";
+export const OUTRUN_TEXT_PRIMARY = "#F4F1EC";
+export const OUTRUN_TEXT_SECONDARY = "#C45A2A";
 
-export const theme = createTheme({
+const theme = createTheme({
   palette: {
     mode: "dark",
 
@@ -121,3 +123,5 @@ export const theme = createTheme({
     },
   },
 });
+
+export { theme };

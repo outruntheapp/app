@@ -1,8 +1,18 @@
 // src/pages/api/routes.js
-// Purpose: Return route data from GPX in public/routes/challenge_1 (fetched via HTTP).
+// Purpose: Return route data from GPX in public/routes/challenge_1 (fetched via HTTP, then fs fallback).
 // Syncs routes into the DB via sync_challenge_routes_from_wkt so process-activities can match.
 
+import fs from "fs";
+import path from "path";
 import { createClient } from "@supabase/supabase-js";
+
+const LOG = (level, message, meta = {}) => {
+  const prefix = "[Routes API]";
+  const payload = Object.keys(meta).length ? { ...meta } : null;
+  if (level === "error") console.error(prefix, message, payload ?? "");
+  else if (level === "warn") console.warn(prefix, message, payload ?? "");
+  else console.log(prefix, message, payload ?? "");
+};
 
 /**
  * Parse GPX text and return array of { lat, lon } from <trkpt lat="" lon=""> elements.
@@ -36,6 +46,25 @@ function getBaseUrl(req) {
   return "http://localhost:3000";
 }
 
+/** Load GPX text: try HTTP first, then fs from public (for serverless where self-fetch can fail). */
+async function loadGpxText(stage, baseUrl, req) {
+  const url = `${baseUrl}/routes/challenge_1/stage-${stage}.gpx`;
+  try {
+    const response = await fetch(url);
+    if (response.ok) return await response.text();
+    LOG("warn", "fetch GPX not ok", { stage, status: response.status });
+  } catch (fetchErr) {
+    LOG("warn", "fetch GPX failed, trying fs", { stage, url, err: fetchErr.message });
+  }
+  const publicPath = path.join(process.cwd(), "public", "routes", "challenge_1", `stage-${stage}.gpx`);
+  try {
+    if (fs.existsSync(publicPath)) return fs.readFileSync(publicPath, "utf8");
+  } catch (fsErr) {
+    LOG("error", "fs read GPX failed", { stage, publicPath, err: fsErr.message });
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -47,16 +76,8 @@ export default async function handler(req, res) {
     const wkts = { 1: null, 2: null, 3: null };
 
     for (let stage = 1; stage <= 3; stage++) {
-      const url = `${baseUrl}/routes/challenge_1/stage-${stage}.gpx`;
-      let gpxText;
-      try {
-        const response = await fetch(url);
-        if (!response.ok) continue;
-        gpxText = await response.text();
-      } catch (fetchErr) {
-        console.warn("Routes API: fetch GPX failed", url, fetchErr.message);
-        continue;
-      }
+      const gpxText = await loadGpxText(stage, baseUrl, req);
+      if (!gpxText) continue;
 
       const coords = parseGpxTrkpt(gpxText);
       if (coords.length === 0) {
@@ -103,14 +124,19 @@ export default async function handler(req, res) {
           p_wkt_3: wkts[3] || null,
         });
         if (rpcError) {
-          console.warn("Routes API: sync RPC failed", rpcError.message);
+          LOG("warn", "sync RPC failed", { message: rpcError.message });
+        } else {
+          LOG("info", "routes synced to DB", { challengeId: challenge.id });
         }
+      } else if (challengeError) {
+        LOG("warn", "no active challenge for sync", { err: challengeError.message });
       }
     }
 
+    LOG("info", "returning routes", { count: routes.length });
     return res.status(200).json(routes);
   } catch (err) {
-    console.error("Routes API error:", err);
+    LOG("error", "handler error", { message: err.message, stack: err.stack });
     return res.status(500).json({ error: "Failed to load route data" });
   }
 }

@@ -8,6 +8,7 @@ import RouteMap from "../components/routes/RouteMap";
 import { fetchActiveChallengeRoutes } from "../services/routeService";
 import { fetchActiveChallenge } from "../services/challengeService";
 import LoadingState from "../components/common/LoadingState";
+import { OUTRUN_WHITE, OUTRUN_BLACK } from "../styles/theme";
 
 export default function RoutesPage() {
   const [routes, setRoutes] = useState([]);
@@ -114,13 +115,13 @@ export default function RoutesPage() {
               variant="fullWidth"
               sx={{
                 "& .MuiTab-root": {
-                  color: "#F4F1EC", // OUTRUN_TEXT_PRIMARY
+                  color: OUTRUN_WHITE,
                   "&.Mui-selected": {
-                    color: "#0B0B0B", // OUTRUN_TEXT_SECONDARY
+                    color: OUTRUN_BLACK,
                   },
                 },
                 "& .MuiTabs-indicator": {
-                  backgroundColor: "#0B0B0B", // OUTRUN_TEXT_SECONDARY
+                  backgroundColor: OUTRUN_BLACK,
                 },
               }}
             >

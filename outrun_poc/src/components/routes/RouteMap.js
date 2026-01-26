@@ -2,6 +2,7 @@
 // Purpose: Display route map using Google Maps embed
 
 import { Box, Typography, Paper } from "@mui/material";
+import { logInfo } from "../../utils/logger";
 
 /**
  * Convert PostGIS LineString WKT to Google Maps embed URL
@@ -58,6 +59,7 @@ function lineStringToGoogleMapsEmbed(lineStringWKT) {
 
 export default function RouteMap({ route, stageNumber }) {
   if (!route) {
+    logInfo("RouteMap: no route passed", { stageNumber });
     return (
       <Paper sx={{ p: 2, textAlign: "center" }}>
         <Typography variant="body2" color="text.secondary">
@@ -67,7 +69,6 @@ export default function RouteMap({ route, stageNumber }) {
     );
   }
 
-  // Try to get geography data - it might be in different formats
   const gpxGeo = route.gpx_geo || route.gpx_geo_text;
   let mapData = null;
 
@@ -177,7 +178,12 @@ export default function RouteMap({ route, stageNumber }) {
     );
   }
 
-  // Fallback if no route data
+  logInfo("RouteMap: no usable gpx_geo for map", {
+    stageNumber,
+    hasGpxGeo: !!gpxGeo,
+    type: gpxGeo ? typeof gpxGeo : null,
+    hasCoordinates: gpxGeo?.coordinates?.length ?? 0,
+  });
   return (
     <Paper sx={{ p: 2, textAlign: "center", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <Typography variant="body2" color="text.secondary">

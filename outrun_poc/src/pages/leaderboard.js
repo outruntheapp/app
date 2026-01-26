@@ -8,6 +8,7 @@ import OverallLeaderboardTable from "../components/leaderboard/OverallLeaderboar
 import StageLeaderboardTable from "../components/leaderboard/StageLeaderboardTable";
 import { fetchOverallLeaderboard, fetchStageLeaderboard } from "../services/leaderboardService";
 import { formatDuration } from "../utils/time";
+import { OUTRUN_WHITE, OUTRUN_BLACK } from "../styles/theme";
 
 export default function LeaderboardPage() {
   const [tabValue, setTabValue] = useState(0);
@@ -104,7 +105,12 @@ export default function LeaderboardPage() {
             <Tabs
               value={tabValue}
               onChange={(e, newValue) => setTabValue(newValue)}
-              sx={{ mb: 2 }}
+              sx={{
+                mb: 2,
+                "& .MuiTab-root": { color: OUTRUN_WHITE },
+                "& .MuiTab-root.Mui-selected": { color: OUTRUN_BLACK },
+                "& .MuiTabs-indicator": { backgroundColor: OUTRUN_BLACK },
+              }}
             >
               <Tab label="Overall" />
               <Tab label="Stage 1" />
@@ -118,6 +124,11 @@ export default function LeaderboardPage() {
                 onChange={(e, newValue) => setGenderFilter(newValue)}
                 variant="scrollable"
                 scrollButtons="auto"
+                sx={{
+                  "& .MuiTab-root": { color: OUTRUN_WHITE },
+                  "& .MuiTab-root.Mui-selected": { color: OUTRUN_BLACK },
+                  "& .MuiTabs-indicator": { backgroundColor: OUTRUN_BLACK },
+                }}
               >
                 <Tab label="All" value="all" />
                 <Tab label="Male" value="M" />

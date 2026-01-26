@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { Container, Stack, Typography, Paper, Box, Divider, Tabs, Tab } from "@mui/material";
 import AppHeader from "../components/common/AppHeader";
 import RouteMap from "../components/routes/RouteMap";
-import { fetchActiveChallengeRoutes } from "../services/routeService";
+import { fetchRoutesForMap } from "../services/routeService";
 import { fetchActiveChallenge } from "../services/challengeService";
 import LoadingState from "../components/common/LoadingState";
 import { OUTRUN_WHITE, OUTRUN_BLACK } from "../styles/theme";
@@ -24,7 +24,7 @@ export default function RoutesPage() {
     setLoading(true);
     try {
       const [routesData, challengeData] = await Promise.all([
-        fetchActiveChallengeRoutes(),
+        fetchRoutesForMap(),
         fetchActiveChallenge(),
       ]);
       setRoutes(routesData || []);

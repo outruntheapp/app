@@ -1,14 +1,38 @@
 // src/services/routeService.js
-// Purpose: Fetch route data from Supabase
+// Purpose: Fetch route data from Supabase and from GPX (API) for map display
 
 import { supabase } from "./supabaseClient";
 import { logError, logInfo } from "../utils/logger";
 import { fetchActiveChallenge } from "./challengeService";
 
 /**
- * Fetch all routes for the active challenge.
- * Uses Supabase routes table when available; falls back to local GPX files (via API)
- * when the routes table is empty so the Routes page can still display stages.
+ * Fetch routes from GPX only (GET /api/routes). For map display on the Routes page.
+ * Does not use Supabase; returns GeoJSON gpx_geo so RouteMap can render.
+ * Use fetchActiveChallengeRoutes() when you need DB-backed routes (e.g. run matching).
+ */
+export async function fetchRoutesForMap() {
+  try {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const res = await fetch(`${baseUrl}/api/routes`);
+    if (!res.ok) {
+      logError("fetchRoutesForMap: API routes failed", { status: res.status, statusText: res.statusText });
+      return [];
+    }
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : [];
+    if (list.length > 0) {
+      logInfo("fetchRoutesForMap: loaded routes from API", { count: list.length });
+    }
+    return list;
+  } catch (err) {
+    logError("fetchRoutesForMap: failed", err);
+    return [];
+  }
+}
+
+/**
+ * Fetch all routes for the active challenge from Supabase (with API fallback when no usable geometry).
+ * Use for features that need DB-backed routes (e.g. overlap checks). Routes page map uses fetchRoutesForMap().
  */
 export async function fetchActiveChallengeRoutes() {
   try {

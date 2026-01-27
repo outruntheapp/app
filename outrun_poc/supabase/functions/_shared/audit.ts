@@ -16,11 +16,16 @@ export async function writeAuditLog({
   entityId?: string;
   metadata?: Record<string, unknown>;
 }) {
-  await supabaseAdmin.from("audit_logs").insert({
-    actor_id: actorId ?? null,
-    action,
-    entity_type: entityType,
-    entity_id: entityId ?? null,
-    metadata,
-  });
+  try {
+    await supabaseAdmin.from("audit_logs").insert({
+      actor_id: actorId ?? null,
+      action,
+      entity_type: entityType,
+      entity_id: entityId ?? null,
+      metadata,
+    });
+  } catch (err) {
+    // Swallow error - audit logging must not block workflow
+    console.error("Audit log write failed (non-blocking):", err);
+  }
 }

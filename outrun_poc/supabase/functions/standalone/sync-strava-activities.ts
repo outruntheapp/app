@@ -21,6 +21,33 @@ function logError(message: string, error: unknown) {
   console.error(JSON.stringify({ level: "error", message, error }));
 }
 
+async function writeAuditLog({
+  actorId,
+  action,
+  entityType,
+  entityId,
+  metadata = {},
+}: {
+  actorId?: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await supabaseAdmin.from("audit_logs").insert({
+      actor_id: actorId ?? null,
+      action,
+      entity_type: entityType,
+      entity_id: entityId ?? null,
+      metadata,
+    });
+  } catch (err) {
+    // Swallow error - audit logging must not block workflow
+    console.error("Audit log write failed (non-blocking):", err);
+  }
+}
+
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const STRAVA_API_URL = "https://www.strava.com/api/v3";
 
@@ -125,6 +152,18 @@ serve(async () => {
         continue;
       }
 
+      // Log user sync start
+      await writeAuditLog({
+        actorId: user.id,
+        action: "strava.sync.user.start",
+        entityType: "user",
+        entityId: user.id,
+        metadata: { athlete_id: user.strava_athlete_id },
+      });
+
+      let userInserted = 0;
+      let userSkipped = 0;
+
       try {
         const accessToken = await getValidAccessToken(user.id);
 
@@ -147,11 +186,56 @@ serve(async () => {
           count: activities.length,
         });
 
+        // Log activities fetched
+        await writeAuditLog({
+          actorId: user.id,
+          action: "strava.sync.activities.fetched",
+          entityType: "user",
+          entityId: user.id,
+          metadata: { count: activities.length },
+        });
+
         for (const act of activities) {
-          if (act.type !== "Run") continue;
-          if (act.sport_type === "VirtualRun") continue;
-          if (act.manual === true) continue;
-          if (!act.map || !act.map.summary_polyline) continue;
+          if (act.type !== "Run") {
+            userSkipped++;
+            await writeAuditLog({
+              actorId: user.id,
+              action: "activity.skipped",
+              entityType: "activity",
+              metadata: { reason: "not_run", strava_activity_id: act.id },
+            });
+            continue;
+          }
+          if (act.sport_type === "VirtualRun") {
+            userSkipped++;
+            await writeAuditLog({
+              actorId: user.id,
+              action: "activity.skipped",
+              entityType: "activity",
+              metadata: { reason: "virtual", strava_activity_id: act.id },
+            });
+            continue;
+          }
+          if (act.manual === true) {
+            userSkipped++;
+            await writeAuditLog({
+              actorId: user.id,
+              action: "activity.skipped",
+              entityType: "activity",
+              metadata: { reason: "manual", strava_activity_id: act.id },
+            });
+            continue;
+          }
+          if (!act.map || !act.map.summary_polyline) {
+            userSkipped++;
+            await writeAuditLog({
+              actorId: user.id,
+              action: "activity.skipped",
+              entityType: "activity",
+              metadata: { reason: "no_polyline", strava_activity_id: act.id },
+            });
+            continue;
+          }
 
           const { error: upsertError } = await supabaseAdmin
             .from("activities")
@@ -179,8 +263,35 @@ serve(async () => {
             continue;
           }
 
-          totalIngested++;
+          // Get activity ID for audit log
+          const { data: activity } = await supabaseAdmin
+            .from("activities")
+            .select("id")
+            .eq("strava_activity_id", act.id)
+            .single();
+
+          // Log activity inserted
+          if (activity) {
+            await writeAuditLog({
+              actorId: user.id,
+              action: "activity.inserted",
+              entityType: "activity",
+              entityId: activity.id,
+              metadata: { strava_activity_id: act.id },
+            });
+            userInserted++;
+            totalIngested++;
+          }
         }
+
+        // Log user sync complete
+        await writeAuditLog({
+          actorId: user.id,
+          action: "strava.sync.user.complete",
+          entityType: "user",
+          entityId: user.id,
+          metadata: { inserted: userInserted, skipped: userSkipped },
+        });
       } catch (err) {
         logError("Failed to sync user activities", {
           userId: user.id,

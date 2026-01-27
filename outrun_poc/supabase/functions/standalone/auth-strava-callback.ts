@@ -34,13 +34,18 @@ async function writeAuditLog({
   entityId?: string;
   metadata?: Record<string, unknown>;
 }) {
-  await supabaseAdmin.from("audit_logs").insert({
-    actor_id: actorId ?? null,
-    action,
-    entity_type: entityType,
-    entity_id: entityId ?? null,
-    metadata,
-  });
+  try {
+    await supabaseAdmin.from("audit_logs").insert({
+      actor_id: actorId ?? null,
+      action,
+      entity_type: entityType,
+      entity_id: entityId ?? null,
+      metadata,
+    });
+  } catch (err) {
+    // Swallow error - audit logging must not block workflow
+    console.error("Audit log write failed (non-blocking):", err);
+  }
 }
 
 // ============================================================================
@@ -248,6 +253,15 @@ serve(async (req) => {
         await supabaseAdmin.auth.admin.deleteUser(userId);
         throw new Error(`Failed to create user record: ${userError.message}`);
       }
+
+      // Log user creation
+      await writeAuditLog({
+        actorId: userId,
+        action: "user.created",
+        entityType: "user",
+        entityId: userId,
+        metadata: { source: "strava" },
+      });
     }
 
     // Store tokens securely
@@ -293,13 +307,21 @@ serve(async (req) => {
           });
         } else {
           logInfo("Created participant record during Strava auth", { userId });
+          // Log participant creation
+          await writeAuditLog({
+            actorId: userId,
+            action: "participant.created",
+            entityType: "participant",
+            metadata: { challenge_id: activeChallenge.id },
+          });
         }
       }
     }
 
+    // Log successful callback
     await writeAuditLog({
       actorId: userId,
-      action: "STRAVA_CONNECTED",
+      action: "auth.strava.callback.success",
       entityType: "user",
       entityId: userId,
     });

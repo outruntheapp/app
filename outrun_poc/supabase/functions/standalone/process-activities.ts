@@ -34,13 +34,18 @@ async function writeAuditLog({
   entityId?: string;
   metadata?: Record<string, unknown>;
 }) {
-  await supabaseAdmin.from("audit_logs").insert({
-    actor_id: actorId ?? null,
-    action,
-    entity_type: entityType,
-    entity_id: entityId ?? null,
-    metadata,
-  });
+  try {
+    await supabaseAdmin.from("audit_logs").insert({
+      actor_id: actorId ?? null,
+      action,
+      entity_type: entityType,
+      entity_id: entityId ?? null,
+      metadata,
+    });
+  } catch (err) {
+    // Swallow error - audit logging must not block workflow
+    console.error("Audit log write failed (non-blocking):", err);
+  }
 }
 
 async function matchesRoute({
@@ -126,15 +131,38 @@ serve(async () => {
 
     for (const act of activities) {
       try {
+        // Log processing start
+        await writeAuditLog({
+          actorId: act.user_id,
+          action: "activity.processing.start",
+          entityType: "activity",
+          entityId: act.id,
+          metadata: { challenge_id: challenge.id },
+        });
+
         const activityDate = new Date(act.started_at);
         const challengeStart = new Date(challenge.starts_at);
         const challengeEnd = new Date(challenge.ends_at);
 
         if (activityDate < challengeStart || activityDate > challengeEnd) {
+          await writeAuditLog({
+            actorId: act.user_id,
+            action: "activity.filtered",
+            entityType: "activity",
+            entityId: act.id,
+            metadata: { reason: "outside_window" },
+          });
           await supabaseAdmin
             .from("activities")
             .update({ processed_at: new Date().toISOString() })
             .eq("id", act.id);
+          await writeAuditLog({
+            actorId: act.user_id,
+            action: "activity.processing.complete",
+            entityType: "activity",
+            entityId: act.id,
+            metadata: { matched: false },
+          });
           processed++;
           continue;
         }
@@ -147,10 +175,24 @@ serve(async () => {
           .single();
 
         if (participantError || !participant || participant.excluded) {
+          await writeAuditLog({
+            actorId: act.user_id,
+            action: "activity.filtered",
+            entityType: "activity",
+            entityId: act.id,
+            metadata: { reason: "participant_excluded" },
+          });
           await supabaseAdmin
             .from("activities")
             .update({ processed_at: new Date().toISOString() })
             .eq("id", act.id);
+          await writeAuditLog({
+            actorId: act.user_id,
+            action: "activity.processing.complete",
+            entityType: "activity",
+            entityId: act.id,
+            metadata: { matched: false },
+          });
           processed++;
           continue;
         }
@@ -158,6 +200,15 @@ serve(async () => {
         let matchedRoute = null;
         for (const route of routes) {
           try {
+            // Log route match attempt
+            await writeAuditLog({
+              actorId: act.user_id,
+              action: "route.match.attempt",
+              entityType: "activity",
+              entityId: act.id,
+              metadata: { stage: route.stage_number },
+            });
+
             const isMatch = await matchesRoute({
               activityLine: act.polyline,
               routeId: route.id,
@@ -165,6 +216,14 @@ serve(async () => {
 
             if (isMatch) {
               matchedRoute = route;
+              // Log match success
+              await writeAuditLog({
+                actorId: act.user_id,
+                action: "route.match.success",
+                entityType: "activity",
+                entityId: act.id,
+                metadata: { stage: route.stage_number },
+              });
               break;
             }
           } catch (err) {
@@ -178,10 +237,25 @@ serve(async () => {
         }
 
         if (!matchedRoute) {
+          // Log match failure
+          await writeAuditLog({
+            actorId: act.user_id,
+            action: "route.match.failure",
+            entityType: "activity",
+            entityId: act.id,
+            metadata: {},
+          });
           await supabaseAdmin
             .from("activities")
             .update({ processed_at: new Date().toISOString() })
             .eq("id", act.id);
+          await writeAuditLog({
+            actorId: act.user_id,
+            action: "activity.processing.complete",
+            entityType: "activity",
+            entityId: act.id,
+            metadata: { matched: false },
+          });
           processed++;
           continue;
         }
@@ -212,16 +286,24 @@ serve(async () => {
             }
           );
 
+          // Get the stage result ID for audit log
+          const { data: stageResult } = await supabaseAdmin
+            .from("stage_results")
+            .select("id")
+            .eq("user_id", act.user_id)
+            .eq("challenge_id", challenge.id)
+            .eq("stage_number", matchedRoute.stage_number)
+            .single();
+
+          // Log stage result upserted
           await writeAuditLog({
             actorId: act.user_id,
-            action: "STAGE_COMPLETED",
+            action: "stage_result.upserted",
             entityType: "stage_result",
-            entityId: null,
+            entityId: stageResult?.id ?? undefined,
             metadata: {
-              challenge_id: challenge.id,
-              stage_number: matchedRoute.stage_number,
+              stage: matchedRoute.stage_number,
               time_seconds: act.elapsed_seconds,
-              activity_id: act.id,
             },
           });
 
@@ -232,6 +314,15 @@ serve(async () => {
           .from("activities")
           .update({ processed_at: new Date().toISOString() })
           .eq("id", act.id);
+
+        // Log processing complete
+        await writeAuditLog({
+          actorId: act.user_id,
+          action: "activity.processing.complete",
+          entityType: "activity",
+          entityId: act.id,
+          metadata: { matched: !!matchedRoute },
+        });
 
         processed++;
       } catch (err) {

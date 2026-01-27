@@ -34,13 +34,18 @@ async function writeAuditLog({
   entityId?: string;
   metadata?: Record<string, unknown>;
 }) {
-  await supabaseAdmin.from("audit_logs").insert({
-    actor_id: actorId ?? null,
-    action,
-    entity_type: entityType,
-    entity_id: entityId ?? null,
-    metadata,
-  });
+  try {
+    await supabaseAdmin.from("audit_logs").insert({
+      actor_id: actorId ?? null,
+      action,
+      entity_type: entityType,
+      entity_id: entityId ?? null,
+      metadata,
+    });
+  } catch (err) {
+    // Swallow error - audit logging must not block workflow
+    console.error("Audit log write failed (non-blocking):", err);
+  }
 }
 
 // ============================================================================
@@ -155,6 +160,14 @@ serve(async (req) => {
         throw new Error(`Failed to create user record: ${userError.message}`);
       }
       logInfo("Created demo user record");
+      // Log user creation
+      await writeAuditLog({
+        actorId: DEMO_USER_ID,
+        action: "user.created",
+        entityType: "user",
+        entityId: DEMO_USER_ID,
+        metadata: { source: "demo" },
+      });
     }
 
     // 3. Create participant record
@@ -178,6 +191,13 @@ serve(async (req) => {
         throw new Error(`Failed to create participant: ${participantError.message}`);
       }
       logInfo("Created demo participant");
+      // Log participant creation
+      await writeAuditLog({
+        actorId: DEMO_USER_ID,
+        action: "participant.created",
+        entityType: "participant",
+        metadata: { challenge_id: challenge.id },
+      });
     }
 
     // 4. Create demo activities (3 runs, one per stage)
@@ -347,6 +367,17 @@ serve(async (req) => {
     }
 
     logInfo("Demo data initialization complete");
+
+    // Log demo data seeded
+    await writeAuditLog({
+      actorId: undefined,
+      action: "demo.data.seeded",
+      entityType: "system",
+      metadata: {
+        users: 1 + additionalDemoUsers.length,
+        activities: activities.length,
+      },
+    });
 
     return new Response(
       JSON.stringify({

@@ -29,6 +29,7 @@ import ExportWinnersButton from "../components/admin/ExportWinnersButton";
 
 const ADMIN_CHALLENGES_URL = "/api/admin/challenges";
 const ADMIN_AUDIT_LOGS_URL = "/api/admin/audit-logs";
+const ADMIN_CRON_AUDIT_LOGS_URL = "/api/admin/cron-audit-logs";
 
 function getAuthHeaders() {
   return new Promise((resolve) => {
@@ -51,9 +52,13 @@ export default function AdminPage() {
   const [addEndsAt, setAddEndsAt] = useState("");
   const [addError, setAddError] = useState("");
   const [tabValue, setTabValue] = useState(0);
+  const [reimportChallengeId, setReimportChallengeId] = useState(null);
+  const [reimportMessage, setReimportMessage] = useState(null);
 
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [cronLogs, setCronLogs] = useState([]);
+  const [cronLogsLoading, setCronLogsLoading] = useState(false);
   const [participants, setParticipants] = useState([]);
 
   const checkAuth = useCallback(async () => {
@@ -116,15 +121,38 @@ export default function AdminPage() {
     }
   }, [checkAuth]);
 
+  const loadCronLogs = useCallback(async () => {
+    const headers = await getAuthHeaders();
+    if (!headers.Authorization) return;
+    setCronLogsLoading(true);
+    try {
+      const res = await fetch(`${ADMIN_CRON_AUDIT_LOGS_URL}?limit=200`, { headers });
+      if (!res.ok) {
+        if (res.status === 403) return checkAuth();
+        throw new Error(await res.text());
+      }
+      const data = await res.json();
+      setCronLogs(data.logs || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCronLogsLoading(false);
+    }
+  }, [checkAuth]);
+
   useEffect(() => {
     if (authState !== "admin") return;
     loadChallenges();
     if (tabValue === 1) loadAuditLogs();
+    if (tabValue === 3) loadCronLogs();
   }, [authState, loadChallenges, tabValue]);
 
   useEffect(() => {
     if (authState === "admin" && tabValue === 1) loadAuditLogs();
   }, [authState, tabValue, loadAuditLogs]);
+  useEffect(() => {
+    if (authState === "admin" && tabValue === 3) loadCronLogs();
+  }, [authState, tabValue, loadCronLogs]);
 
   const handleAddChallenge = async () => {
     setAddError("");
@@ -170,6 +198,30 @@ export default function AdminPage() {
       return;
     }
     loadChallenges();
+  };
+
+  const handleReimportRoutes = async (challengeId) => {
+    setReimportMessage(null);
+    setReimportChallengeId(challengeId);
+    const headers = await getAuthHeaders();
+    if (!headers.Authorization) return;
+    try {
+      const res = await fetch("/api/admin/reimport-routes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify({ challenge_id: challengeId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReimportMessage({ type: "error", text: data.error || res.statusText });
+        return;
+      }
+      setReimportMessage({ type: "success", text: `Re-imported ${data.count ?? 0} route(s) from GPX for ${data.slug ?? "challenge"}.` });
+    } catch (e) {
+      setReimportMessage({ type: "error", text: e.message || "Re-import failed" });
+    } finally {
+      setReimportChallengeId(null);
+    }
   };
 
   if (authState === "loading") {
@@ -224,6 +276,7 @@ export default function AdminPage() {
           <Tab label="Challenges" />
           <Tab label="Audit logs" />
           <Tab label="Participants" />
+          <Tab label="Cron logs" />
         </Tabs>
 
         {tabValue === 0 && (
@@ -269,6 +322,11 @@ export default function AdminPage() {
               </Stack>
               {addError && <Alert severity="error" sx={{ mt: 1 }}>{addError}</Alert>}
             </Paper>
+            {reimportMessage && (
+              <Alert severity={reimportMessage.type} onClose={() => setReimportMessage(null)} sx={{ mb: 1 }}>
+                {reimportMessage.text}
+              </Alert>
+            )}
             <Paper sx={{ overflow: "auto" }}>
               <Typography variant="subtitle1" sx={{ p: 2 }}>
                 All challenges
@@ -284,6 +342,7 @@ export default function AdminPage() {
                       <TableCell>Starts</TableCell>
                       <TableCell>Ends</TableCell>
                       <TableCell>Active</TableCell>
+                      <TableCell>Routes</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
                   </TableHead>
@@ -295,6 +354,16 @@ export default function AdminPage() {
                         <TableCell>{c.starts_at ? new Date(c.starts_at).toLocaleString() : "—"}</TableCell>
                         <TableCell>{c.ends_at ? new Date(c.ends_at).toLocaleString() : "—"}</TableCell>
                         <TableCell>{c.is_active ? <Chip label="Active" color="primary" size="small" /> : "—"}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            disabled={reimportChallengeId === c.id}
+                            onClick={() => handleReimportRoutes(c.id)}
+                          >
+                            {reimportChallengeId === c.id ? "Importing…" : "Re-import routes from GPX"}
+                          </Button>
+                        </TableCell>
                         <TableCell>
                           {!c.is_active && (
                             <Button size="small" onClick={() => handleSetActive(c.id)}>
@@ -347,6 +416,45 @@ export default function AdminPage() {
             <ParticipantTable participants={participants} onToggle={() => {}} />
             <ExportWinnersButton onExport={() => {}} />
           </Stack>
+        )}
+
+        {tabValue === 3 && (
+          <Paper sx={{ overflow: "auto" }}>
+            {cronLogsLoading ? (
+              <Box sx={{ p: 2 }}>Loading...</Box>
+            ) : (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Created</TableCell>
+                    <TableCell>Run ID</TableCell>
+                    <TableCell>Job</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Metadata</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {cronLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell>{log.created_at ? new Date(log.created_at).toLocaleString() : "—"}</TableCell>
+                      <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>{String(log.run_id).slice(0, 8)}…</TableCell>
+                      <TableCell>{log.job_name}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={log.status}
+                          size="small"
+                          color={log.status === "completed" ? "success" : log.status === "failed" ? "error" : "default"}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {log.metadata && Object.keys(log.metadata).length ? JSON.stringify(log.metadata) : "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Paper>
         )}
       </Container>
     </>

@@ -66,3 +66,33 @@ export async function ensureChallengeRoutes(supabase, challengeId, slug) {
   const inserted = [wkts[1], wkts[2], wkts[3]].filter(Boolean).length;
   return { synced: true, count: inserted };
 }
+
+/**
+ * Force re-import routes from GPX for a challenge (public/routes/<slug>/stage-1..3.gpx).
+ * Always calls sync_challenge_routes_from_wkt, replacing existing route rows for that challenge.
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase - service role client
+ * @param {string} challengeId - challenge uuid
+ * @param {string} slug - challenge slug (e.g. challenge_1)
+ * @returns {{ synced: boolean, count: number, error?: string }}
+ */
+export async function forceSyncChallengeRoutesFromGpx(supabase, challengeId, slug) {
+  const wkts = { 1: null, 2: null, 3: null };
+  for (let stage = 1; stage <= 3; stage++) {
+    const gpxText = loadGpxFromFs(slug, stage);
+    if (!gpxText) continue;
+    const coords = parseGpxTrkpt(gpxText);
+    if (coords.length > 0) wkts[stage] = coordsToWkt(coords);
+  }
+  if (!wkts[1] && !wkts[2] && !wkts[3]) {
+    return { synced: false, count: 0, error: "No GPX files found for slug" };
+  }
+  const { error: rpcError } = await supabase.rpc("sync_challenge_routes_from_wkt", {
+    p_challenge_id: challengeId,
+    p_wkt_1: wkts[1] || null,
+    p_wkt_2: wkts[2] || null,
+    p_wkt_3: wkts[3] || null,
+  });
+  if (rpcError) return { synced: false, count: 0, error: rpcError.message };
+  const count = [wkts[1], wkts[2], wkts[3]].filter(Boolean).length;
+  return { synced: true, count };
+}

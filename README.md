@@ -38,58 +38,67 @@ outrun_poc/
 │   ├── VERCEL_ENV_SETUP.md
 │   ├── FIRST_RUN_CHECKLIST.md
 │   ├── STRAVA_ERROR_FIX.md
-│   └── ... (APP_FLOW_DIAGRAM, EDGE_FUNCTIONS, SQL_SCHEMA, TEST_STRAVA_RUNS, etc.)
+│   ├── APP_FLOW_DIAGRAM.md
+│   ├── EDGE_FUNCTIONS.md
+│   ├── ERROR_LOGS_AND_DEBUGGING.md
+│   ├── GPX_TO_ROUTES_PAGE_FLOW.md
+│   ├── RUNNING_TESTS.md
+│   └── ... (SQL_SCHEMA, TEST_STRAVA_RUNS, etc.)
+│
+├── public/
+│   └── routes/             # GPX route files (e.g. challenge_1/stage-1.gpx)
+│       └── <slug>/         # stage-1.gpx, stage-2.gpx, stage-3.gpx
 │
 ├── src/
 │   ├── components/        # Reusable UI components (no data access)
-│   │   ├── auth/          # OAuth / authentication UI
+│   │   ├── auth/          # OAuth / Strava connect
 │   │   ├── dashboard/     # Runner-facing components
-│   │   ├── leaderboard/  # Public leaderboard components
-│   │   ├── routes/        # Route map display components
-│   │   ├── admin/         # Admin-only UI
-│   │   └── common/        # Shared UI (header, loading, empty states, countdown, rules)
+│   │   ├── leaderboard/   # Public leaderboard components
+│   │   ├── admin/         # Admin-only UI (participants, export)
+│   │   └── common/        # Shared UI (header, countdown, rules)
 │   │
 │   ├── pages/             # Route-level pages (Next.js)
-│   │   ├── index.js       # Landing / login (fixed-height, centered)
-│   │   ├── dashboard.js   # Runner dashboard (summary view)
-│   │   ├── leaderboard.js # Public leaderboards (full data)
+│   │   ├── index.js       # Landing / login
+│   │   ├── dashboard.js   # Runner dashboard
+│   │   ├── leaderboard.js # Public leaderboards
 │   │   ├── routes.js      # Challenge routes with GPX maps
-│   │   └── admin.js       # Admin panel
+│   │   ├── admin.js       # Admin panel (challenges, audit logs, cron logs, re-import routes)
+│   │   └── api/           # API routes
+│   │       ├── admin/     # audit-logs, cron-audit-logs, reimport-routes, challenges
+│   │       ├── routes.js  # Routes from GPX + sync to DB
+│   │       ├── route-geometry.js
+│   │       └── demo-polylines.js
 │   │
 │   ├── services/          # Business logic + Supabase access
 │   │   ├── supabaseClient.js
 │   │   ├── authService.js
 │   │   ├── activityService.js
 │   │   ├── leaderboardService.js
-│   │   ├── adminService.js
-│   │   ├── auditService.js
-│   │   ├── challengeService.js
-│   │   ├── participantService.js  # Participant validation
-│   │   ├── routeService.js        # Route data fetching
-│   │   └── userService.js
+│   │   ├── routeService.js
+│   │   ├── userService.js
+│   │   └── ...
+│   │
+│   ├── lib/               # Server-only helpers
+│   │   └── ensureChallengeRoutes.js  # GPX → WKT sync; forceSyncChallengeRoutesFromGpx for re-import
 │   │
 │   ├── utils/             # Pure helpers (no side effects)
-│   │   ├── geo.js
-│   │   ├── time.js
-│   │   ├── logger.js
-│   │   ├── guards.js
-│   │   └── demoMode.js    # Demo mode utilities
+│   │   ├── adminAuth.js   # Admin role / email allowlist
+│   │   ├── demoMode.js
+│   │   └── ...
 │   │
-│   ├── constants/         # Static configuration and enums
-│   │   ├── challenge.js
-│   │   ├── routes.js
-│   │   ├── stages.js
-│   │   └── roles.js
-│   │
+│   ├── constants/
 │   └── styles/
-│       └── theme.js       # MUI theme configuration
+│       └── theme.js       # MUI theme (OUTRUN_BURNT, OUTRUN_WHITE, etc.)
 │
 ├── supabase/
 │   ├── functions/         # Edge functions (Deno/TypeScript)
-│   └── migrations/       # SQL schema migrations
+│   │   ├── standalone/    # sync-strava-activities, process-activities, auth-*, init-demo-data
+│   │   └── _shared/       # geo (matchesRoute), audit, supabase
+│   └── migrations/       # SQL schema + match_activity_to_route, match_activity_to_route_debug
 │
-└── routes/               # GPX route files for challenges
-````
+├── demo/                  # Demo mode data and polyline generation
+└── scripts/               # One-off scripts (ingest-strava-activity, upload-routes)
+```
 ---
 
 ## Architectural Rules
@@ -188,10 +197,9 @@ Without refactoring core logic.
    * Populate real secrets
    * Deploy Edge Functions
 
-4. **Real GPX Upload**
+4. **GPX routes**
 
-   * Convert GPX → `LineString`
-   * Insert into `routes`
+   * Place GPX files in `public/routes/<slug>/stage-1.gpx` (and 2, 3). Use Admin "Re-import routes from GPX" or GET `/api/routes` to sync into `routes` (WKT → `gpx_geo` + `polyline`).
 
 ---
 
@@ -241,65 +249,34 @@ Without refactoring core logic.
 
 ---
 
-## 🆕 Recent Updates
+## Recent Updates
 
-### Demo Mode Feature
-- **Available in production** for testing without Strava API approval
-- Toggle visible in top-right corner of landing page
-- Allows developers and testers to explore the app without Strava authentication
-- See `instructions/DEMO_MODE.md` for details
+### Session & Auth
+- **Return sign-in**: `auth-return-signin` Edge Function + client `verifyOtp` so users with existing Strava link get a session when clicking ENTER (no re-OAuth).
+- **Strava OAuth callback**: Returns magic-link token so client can establish session after first-time Strava auth.
+- **Session isolation**: Logout clears stored email and reloads; callback and landing clear stored email to avoid data leak when switching users in same browser.
+- **Reconnect Strava**: Dashboard shows "Reconnect Strava" when user has Strava link but no valid token; RPCs `check_strava_connection_by_email` and `get_strava_connection_status` used instead of direct `users` queries (RLS-safe).
 
-### Landing Page Improvements
-- Fixed-height, centered layout (no scrolling)
-- Countdown timer for challenge start date
-- "Join Challenge" button reveals email input field
-- Email validation and Strava connection check
-- "ENTER" button for users with existing Strava connection
-- "Connect Strava" button for new users
-- Email stored in `users.email` field during OAuth flow
-- "Rules" button
-- Participant validation before Strava connection
-- Removed AppHeader for cleaner landing experience
-- Logo positioned directly beneath name (no extra spacing)
+### Admin
+- **Admin access**: Header "Admin" link (far left) for users with `users.role = 'admin'` (set manually in DB). Admin page: Challenges, Audit logs, Participants, **Cron logs**.
+- **Cron logs tab**: GET `/api/admin/cron-audit-logs`; Admin tab shows `cron_audit_logs` (run_id, job_name, status, metadata).
+- **Re-import routes from GPX**: Per-challenge button on Challenges tab; POST `/api/admin/reimport-routes` with `challenge_id`; uses `forceSyncChallengeRoutesFromGpx` to re-run sync from `public/routes/<slug>/stage-*.gpx`.
 
-### Navigation & UI Enhancements
-- **Full-width header**: AppHeader spans entire viewport, flush at top
-- **Navigation menu**: Dashboard, Routes, Leaderboard links in header (right side)
-- **Mobile responsive**: Hamburger menu on small screens
-- **Routes page**: New `/routes` page displaying GPX maps for each challenge stage
-- **Dashboard improvements**: Added "View Full Leaderboard" CTA button
-- **Route visualization**: Google Maps embed support for route display
+### Route Matching
+- **routes.polyline**: Migration 12 adds `routes.polyline` (Google encoded, precision 5). `sync_challenge_routes_from_wkt` sets it from WKT; backfill for existing rows. Strava activity polylines and route polylines use same format; no conversion needed.
+- **match_activity_to_route**: Uses `routes.polyline` when present (decode with precision 5); fallback encode/decode from `gpx_geo`. Guards for null/empty/zero-length; buffer and overlap ratio unchanged.
+- **match_activity_to_route_debug**: Migration 13 adds diagnostic RPC returning `activity_point_count`, `route_polyline_used`, `route_point_count`, `overlap_ratio`, `matched` for debugging.
 
-### New Components & Services
-- `CountdownTimer`: Displays time until challenge starts
-- `RulesDialog`: Shows challenge rules and information
-- `RouteMap`: Displays route maps with Google Maps embed
-- `participantService`: Validates user participation status
-- `routeService`: Fetches route data from Supabase
-- `authService`: Enhanced with email-based Strava connection checking
-- `demoMode` utility: Manages demo mode state
-
-### Documentation
-- All documentation moved to `instructions/` directory
-- Added `STRAVA_ERROR_FIX.md` for CORS troubleshooting
-- Updated deployment guides with latest fixes
-
-### Technical Fixes
-- Fixed CORS issues in `auth-strava-callback` edge function
-- Improved error handling and user feedback
-- Auto-push Git hook configured (pushes to GitHub after commits on main branch)
-- **Security & Data Integrity Fixes**:
-  - Created secure RPC function `check_strava_connection_by_email` to bypass RLS for email lookups
-  - OAuth callback now uses deterministic matching (only `strava_athlete_id`, never email)
-  - Added email collision checks to prevent overwriting other users' data
-  - Demo mode now simulates full OAuth flow with demo Strava athlete ID (999999999)
-  - Global error handlers suppress third-party analytics CORS errors (Strava, Google Analytics)
+### Demo Mode & Landing
+- Demo mode: Toggle on landing; see `instructions/DEMO_MODE.md`.
+- Landing: Join Challenge reveals Strava connect; ENTER for return sign-in. No ticket flow yet.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Deploy**: `outrun_poc/instructions/DEPLOYMENT_QUICK_START.md` (Supabase + Vercel). For full verification order use `FIRST_RUN_CHECKLIST.md`.
 2. **Env**: `VERCEL_ENV_SETUP.md` (Vercel); Supabase secrets per `SUPABASE_DEPLOYMENT.md`.
 3. **Demo**: Click "Demo Mode OFF" on landing to test without Strava; see `DEMO_MODE.md`.
 4. **Flow**: `APP_FLOW_DIAGRAM.md` — app flow and roles. Troubleshooting: `STRAVA_ERROR_FIX.md`.
+5. **Tests**: `instructions/RUNNING_TESTS.md`. **Route matching debug**: Call `match_activity_to_route_debug(activity_polyline, route_id)` in SQL to get overlap_ratio and point counts; see `instructions/GPX_TO_ROUTES_PAGE_FLOW.md` and `TEST_STRAVA_RUNS.md`.

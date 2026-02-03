@@ -46,17 +46,18 @@ function getBaseUrl(req) {
   return "http://localhost:3000";
 }
 
-/** Load GPX text: try HTTP first, then fs from public (for serverless where self-fetch can fail). */
-async function loadGpxText(stage, baseUrl, req) {
-  const url = `${baseUrl}/routes/challenge_1/stage-${stage}.gpx`;
+/** Load GPX text: try HTTP first, then fs from public (for serverless where self-fetch can fail). Uses active challenge slug. */
+async function loadGpxText(stage, baseUrl, req, slug) {
+  const safeSlug = slug && /^[a-zA-Z0-9_-]+$/.test(slug) ? slug : "challenge_1";
+  const url = `${baseUrl}/routes/${safeSlug}/stage-${stage}.gpx`;
   try {
     const response = await fetch(url);
     if (response.ok) return await response.text();
-    LOG("warn", "fetch GPX not ok", { stage, status: response.status });
+    LOG("warn", "fetch GPX not ok", { stage, slug: safeSlug, status: response.status });
   } catch (fetchErr) {
-    LOG("warn", "fetch GPX failed, trying fs", { stage, url, err: fetchErr.message });
+    LOG("warn", "fetch GPX failed, trying fs", { stage, slug: safeSlug, err: fetchErr.message });
   }
-  const publicPath = path.join(process.cwd(), "public", "routes", "challenge_1", `stage-${stage}.gpx`);
+  const publicPath = path.join(process.cwd(), "public", "routes", safeSlug, `stage-${stage}.gpx`);
   try {
     if (fs.existsSync(publicPath)) return fs.readFileSync(publicPath, "utf8");
   } catch (fsErr) {
@@ -71,12 +72,27 @@ export default async function handler(req, res) {
   }
 
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
+    let activeSlug = "challenge_1";
+    let activeChallengeId = null;
+    if (supabaseUrl && serviceRoleKey) {
+      const supabase = createClient(supabaseUrl, serviceRoleKey);
+      const { data: activeChallenge } = await supabase
+        .from("challenges")
+        .select("id, slug")
+        .eq("is_active", true)
+        .single();
+      if (activeChallenge?.slug) activeSlug = activeChallenge.slug;
+      if (activeChallenge?.id) activeChallengeId = activeChallenge.id;
+    }
+
     const baseUrl = getBaseUrl(req);
     const routes = [];
     const wkts = { 1: null, 2: null, 3: null };
 
     for (let stage = 1; stage <= 3; stage++) {
-      const gpxText = await loadGpxText(stage, baseUrl, req);
+      const gpxText = await loadGpxText(stage, baseUrl, req, activeSlug);
       if (!gpxText) continue;
 
       const coords = parseGpxTrkpt(gpxText);
@@ -106,30 +122,18 @@ export default async function handler(req, res) {
     }
 
     // Sync to DB when we have an active challenge and at least one WKT
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-    const serviceRoleKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
-    if (supabaseUrl && serviceRoleKey && (wkts[1] || wkts[2] || wkts[3])) {
+    if (supabaseUrl && serviceRoleKey && activeChallengeId && (wkts[1] || wkts[2] || wkts[3])) {
       const supabase = createClient(supabaseUrl, serviceRoleKey);
-      const { data: challenge, error: challengeError } = await supabase
-        .from("challenges")
-        .select("id")
-        .eq("is_active", true)
-        .single();
-      if (!challengeError && challenge?.id) {
-        const { error: rpcError } = await supabase.rpc("sync_challenge_routes_from_wkt", {
-          p_challenge_id: challenge.id,
-          p_wkt_1: wkts[1] || null,
-          p_wkt_2: wkts[2] || null,
-          p_wkt_3: wkts[3] || null,
-        });
-        if (rpcError) {
-          LOG("warn", "sync RPC failed", { message: rpcError.message });
-        } else {
-          LOG("info", "routes synced to DB", { challengeId: challenge.id });
-        }
-      } else if (challengeError) {
-        LOG("warn", "no active challenge for sync", { err: challengeError.message });
+      const { error: rpcError } = await supabase.rpc("sync_challenge_routes_from_wkt", {
+        p_challenge_id: activeChallengeId,
+        p_wkt_1: wkts[1] || null,
+        p_wkt_2: wkts[2] || null,
+        p_wkt_3: wkts[3] || null,
+      });
+      if (rpcError) {
+        LOG("warn", "sync RPC failed", { message: rpcError.message });
+      } else {
+        LOG("info", "routes synced to DB", { challengeId: activeChallengeId });
       }
     }
 

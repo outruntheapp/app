@@ -177,7 +177,7 @@ export default function RoutesPage() {
                 </Box>
                 <Divider sx={{ mb: 2, flexShrink: 0 }} />
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <RouteMap challenge="challenge_1" stage={`stage-${selectedStage}`} onGoogleMapsUrl={setGoogleMapsUrl} />
+                  <RouteMap challenge={challenge?.slug ?? "challenge_1"} stage={`stage-${selectedStage}`} onGoogleMapsUrl={setGoogleMapsUrl} />
                 </Box>
               </Paper>
             )}

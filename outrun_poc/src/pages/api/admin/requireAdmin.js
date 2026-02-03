@@ -1,8 +1,7 @@
 // src/pages/api/admin/requireAdmin.js
-// Returns { user, supabase } if request is from an allowed admin; otherwise sends 403 and returns null.
+// Returns { user, supabase } if request user has users.role = 'admin'; otherwise 403.
 
 import { createClient } from "@supabase/supabase-js";
-import { isAllowedAdminEmail } from "../../../utils/adminAuth";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -21,10 +20,15 @@ export async function requireAdmin(req, res) {
   }
   const supabaseAnon = createClient(supabaseUrl, anonKey);
   const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
-  if (error || !user || !isAllowedAdminEmail(user?.email)) {
+  if (error || !user) {
     res.status(403).json({ error: "Forbidden" });
     return null;
   }
   const supabase = createClient(supabaseUrl, serviceRoleKey);
+  const { data: row } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+  if (row?.role !== "admin") {
+    res.status(403).json({ error: "Forbidden" });
+    return null;
+  }
   return { user, supabase };
 }

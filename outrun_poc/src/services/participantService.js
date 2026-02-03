@@ -70,9 +70,8 @@ export async function isUserParticipant(userId, challengeId) {
 }
 
 /**
- * Join the active challenge
- * For now: Just returns success to reveal Strava button (no Supabase changes)
- * Future: Will handle ticket purchase/validation
+ * Join the active challenge (insert participant row for current user + active challenge).
+ * Calls POST /api/join-active-challenge with session token.
  */
 export async function joinActiveChallenge() {
   try {
@@ -81,9 +80,26 @@ export async function joinActiveChallenge() {
       return { success: true, message: "Demo user is already a participant" };
     }
 
-    // Just return success - no Supabase operations
-    // Strava auth will create user and participant records
-    return { success: true };
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      return { success: false, error: "Not signed in" };
+    }
+
+    const base = typeof window !== "undefined" ? "" : process.env.NEXT_PUBLIC_APP_URL || "";
+    const res = await fetch(`${base}/api/join-active-challenge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { success: false, error: body.error || res.statusText };
+    }
+
+    const data = await res.json().catch(() => ({}));
+    return { success: true, joined: data.joined };
   } catch (err) {
     logError("Failed to join challenge", err);
     throw err;

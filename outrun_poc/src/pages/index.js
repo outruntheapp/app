@@ -8,7 +8,8 @@ import Image from "next/image";
 import CountdownTimer from "../components/common/CountdownTimer";
 import RulesDialog from "../components/common/RulesDialog";
 import { fetchActiveChallenge } from "../services/challengeService";
-import { isCurrentUserParticipant } from "../services/participantService";
+import { isCurrentUserParticipant, joinActiveChallenge } from "../services/participantService";
+import { supabase } from "../services/supabaseClient";
 import { isDemoMode, disableDemoMode } from "../utils/demoMode";
 import { checkStravaConnectionByEmail, clearStoredEmail } from "../services/authService";
 import name from "../assets/name.png";
@@ -26,6 +27,8 @@ export default function LandingPage() {
   const [hasStrava, setHasStrava] = useState(null); // null = not checked, true/false = checked
   const [hasToken, setHasToken] = useState(null); // null = not checked; true/false when hasStrava
   const [checkingStrava, setCheckingStrava] = useState(false);
+  const [authUser, setAuthUser] = useState(null);
+  const [joiningChallenge, setJoiningChallenge] = useState(false);
 
   useEffect(() => {
     clearStoredEmail();
@@ -36,12 +39,14 @@ export default function LandingPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [challengeData, participantStatus] = await Promise.all([
+      const [challengeData, participantStatus, { data: { user } }] = await Promise.all([
         fetchActiveChallenge(),
         isCurrentUserParticipant(),
+        supabase.auth.getUser(),
       ]);
       setChallenge(challengeData);
       setIsParticipant(participantStatus);
+      setAuthUser(user ?? null);
     } catch (err) {
       console.error("Failed to load challenge data", err);
     } finally {
@@ -53,18 +58,29 @@ export default function LandingPage() {
     try {
       // In demo mode, demo user is already a participant (created by init-demo-data)
       if (demoMode) {
-        // Just refresh the data to show the participant status
         await loadData();
         return;
       }
-      
-      // Show email input field
+      // Signed in but not participant: call API to join current challenge
+      if (authUser && challenge && !isParticipant) {
+        setJoiningChallenge(true);
+        const result = await joinActiveChallenge();
+        setJoiningChallenge(false);
+        if (result.success) {
+          await loadData();
+        } else {
+          alert(result.error || "Failed to join challenge. Please try again.");
+        }
+        return;
+      }
+      // Not signed in: show email input
       setShowEmailInput(true);
       setEmail("");
       setEmailError("");
       setHasStrava(null);
       setHasToken(null);
     } catch (err) {
+      setJoiningChallenge(false);
       console.error("Failed to join challenge", err);
       alert("Failed to join challenge. Please try again.");
     }
@@ -209,11 +225,16 @@ export default function LandingPage() {
             {!showEmailInput ? (
               <>
                 <Button
-                  variant="outlined"
+                  variant={authUser && challenge && !isParticipant ? "contained" : "outlined"}
                   fullWidth
                   onClick={handleJoinChallenge}
+                  disabled={joiningChallenge}
                 >
-                  Join Challenge
+                  {joiningChallenge
+                    ? "Joining…"
+                    : authUser && challenge && !isParticipant
+                    ? `Join ${challenge.name}`
+                    : "Join Challenge"}
                 </Button>
 
                 <Button

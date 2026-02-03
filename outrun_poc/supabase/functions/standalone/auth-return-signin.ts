@@ -55,7 +55,7 @@ serve(async (req) => {
 
     const { data: userRow, error: selectError } = await supabaseAdmin
       .from("users")
-      .select("strava_athlete_id")
+      .select("id, strava_athlete_id")
       .eq("email", trimmedEmail)
       .not("strava_athlete_id", "is", null)
       .maybeSingle();
@@ -73,6 +73,39 @@ serve(async (req) => {
         JSON.stringify({ success: false, error: "Sign-in not available" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Ensure participant for current active challenge (so return sign-in adds user to new challenge)
+    const { data: activeChallenge } = await supabaseAdmin
+      .from("challenges")
+      .select("id")
+      .eq("is_active", true)
+      .single();
+    if (activeChallenge) {
+      const { data: existingParticipant } = await supabaseAdmin
+        .from("participants")
+        .select("id")
+        .eq("user_id", userRow.id)
+        .eq("challenge_id", activeChallenge.id)
+        .maybeSingle();
+      if (!existingParticipant) {
+        const { error: participantInsertError } = await supabaseAdmin
+          .from("participants")
+          .insert({
+            user_id: userRow.id,
+            challenge_id: activeChallenge.id,
+            excluded: false,
+          });
+        if (participantInsertError) {
+          logError("Return sign-in: participant insert failed (non-blocking)", {
+            userId: userRow.id,
+            challengeId: activeChallenge.id,
+            error: participantInsertError.message,
+          });
+        } else {
+          logInfo("Return sign-in: created participant for active challenge", { userId: userRow.id });
+        }
+      }
     }
 
     const authEmail = `strava_${userRow.strava_athlete_id}@strava.local`;

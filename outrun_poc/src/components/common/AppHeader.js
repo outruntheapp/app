@@ -128,7 +128,7 @@ export default function AppHeader({ show = true, hideNav = false }) {
                 "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
               }}
             >
-              Admin
+              ADMIN
             </Button>
           </Box>
         )}

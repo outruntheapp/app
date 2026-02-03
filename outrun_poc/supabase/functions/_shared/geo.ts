@@ -3,6 +3,10 @@
 
 import { supabaseAdmin } from "./supabase.ts";
 
+/**
+ * Calls match_activity_to_route RPC. activityLine must be Google encoded polyline, precision 5
+ * (Strava map.summary_polyline); do not truncate or re-encode.
+ */
 export async function matchesRoute({
   activityLine,
   routeId,

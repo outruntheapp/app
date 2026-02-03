@@ -105,7 +105,7 @@ serve(async () => {
         for (const route of routes) {
           try {
             const isMatch = await matchesRoute({
-              activityLine: act.polyline,
+              activityLine: act.polyline, // Strava map.summary_polyline: Google encoded, precision 5
               routeId: route.id,
             });
 

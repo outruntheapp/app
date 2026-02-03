@@ -71,6 +71,10 @@ async function writeCronAuditLog({
   }
 }
 
+/**
+ * Calls match_activity_to_route RPC. activityLine must be Google encoded polyline, precision 5
+ * (Strava map.summary_polyline); do not truncate or re-encode.
+ */
 async function matchesRoute({
   activityLine,
   routeId,
@@ -238,7 +242,7 @@ serve(async () => {
             });
 
             const isMatch = await matchesRoute({
-              activityLine: act.polyline,
+              activityLine: act.polyline, // Strava map.summary_polyline: Google encoded, precision 5
               routeId: route.id,
             });
 

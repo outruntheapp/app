@@ -19,15 +19,32 @@ export async function fetchCurrentUser() {
         .select("*")
         .eq("id", authUser.id)
         .single();
-      if (error) throw error;
-      // Ensure display name: prefer users.full_name, then auth user_metadata, then email local part
-      const fullName =
-        data?.full_name?.trim() ||
+      // No row (e.g. magic-link user without public.users) -> build synthetic user
+      const identityName =
         authUser?.user_metadata?.full_name?.trim() ||
         authUser?.user_metadata?.name?.trim() ||
-        (authUser?.email ? authUser.email.replace(/@.*$/, "").trim() : "") ||
+        authUser?.user_metadata?.user_name?.trim() ||
+        (authUser?.identities?.[0]?.identity_data?.full_name ||
+          authUser?.identities?.[0]?.identity_data?.name)?.trim?.() ||
+        "";
+      const emailPart =
+        authUser?.email && !authUser.email.includes("@strava.local")
+          ? authUser.email.replace(/@.*$/, "").trim()
+          : "";
+      const fallbackName = identityName || emailPart || "Runner";
+      if (error) {
+        if (error.code === "PGRST116") {
+          return { id: authUser.id, full_name: fallbackName };
+        }
+        throw error;
+      }
+      const fullName =
+        data?.full_name?.trim() ||
+        (data?.email && !String(data.email).includes("strava.local") ? data.email.replace(/@.*$/, "").trim() : "") ||
+        identityName ||
+        emailPart ||
         "Runner";
-      return data ? { ...data, full_name: fullName } : { id: authUser.id, full_name: fullName };
+      return { ...data, full_name: fullName };
     }
 
     // Otherwise use demo user only when demo mode is on

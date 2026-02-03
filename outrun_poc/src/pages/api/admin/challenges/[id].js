@@ -1,7 +1,8 @@
 // src/pages/api/admin/challenges/[id].js
-// PATCH: set is_active (only one active at a time).
+// PATCH: set is_active (only one active at a time). When activating, ensure routes exist (auto-import from GPX if missing).
 
 import { requireAdmin } from "../requireAdmin";
+import { ensureChallengeRoutes } from "../../../../lib/ensureChallengeRoutes";
 
 export default async function handler(req, res) {
   if (req.method !== "PATCH") {
@@ -40,5 +41,17 @@ export default async function handler(req, res) {
   if (error) {
     return res.status(500).json({ error: error.message });
   }
+
+  // When activating, ensure this challenge has route entries; if not, import from public/routes/<slug>/
+  if (is_active && data?.slug) {
+    const result = await ensureChallengeRoutes(supabase, id, data.slug);
+    if (result.synced) {
+      return res.status(200).json({ ...data, routes_imported: result.count });
+    }
+    if (result.error) {
+      return res.status(200).json({ ...data, routes_imported: 0, routes_note: result.error });
+    }
+  }
+
   return res.status(200).json(data);
 }

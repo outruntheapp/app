@@ -48,6 +48,29 @@ async function writeAuditLog({
   }
 }
 
+async function writeCronAuditLog({
+  runId,
+  jobName,
+  status,
+  metadata = {},
+}: {
+  runId: string;
+  jobName: string;
+  status: "started" | "completed" | "failed";
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await supabaseAdmin.from("cron_audit_logs").insert({
+      run_id: runId,
+      job_name: jobName,
+      status,
+      metadata,
+    });
+  } catch (err) {
+    console.error("Cron audit log write failed (non-blocking):", err);
+  }
+}
+
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const STRAVA_API_URL = "https://www.strava.com/api/v3";
 
@@ -126,7 +149,9 @@ async function fetchAthleteActivities(
 // ============================================================================
 
 serve(async () => {
+  const runId = crypto.randomUUID();
   try {
+    await writeCronAuditLog({ runId, jobName: "sync-strava-activities", status: "started", metadata: {} });
     logInfo("Starting Strava sync");
 
     const { data: users, error: usersError } = await supabaseAdmin
@@ -302,6 +327,7 @@ serve(async () => {
     }
 
     logInfo("Strava sync completed", { totalIngested });
+    await writeCronAuditLog({ runId, jobName: "sync-strava-activities", status: "completed", metadata: { totalIngested } });
 
     return new Response(
       JSON.stringify({ message: "Sync completed", totalIngested }),
@@ -311,6 +337,12 @@ serve(async () => {
     );
   } catch (err) {
     logError("Strava sync failed", err);
+    await writeCronAuditLog({
+      runId,
+      jobName: "sync-strava-activities",
+      status: "failed",
+      metadata: { error: err instanceof Error ? err.message : String(err) },
+    });
     return new Response(
       JSON.stringify({ error: "Sync failed" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

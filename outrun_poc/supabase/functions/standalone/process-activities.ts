@@ -48,6 +48,29 @@ async function writeAuditLog({
   }
 }
 
+async function writeCronAuditLog({
+  runId,
+  jobName,
+  status,
+  metadata = {},
+}: {
+  runId: string;
+  jobName: string;
+  status: "started" | "completed" | "failed";
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await supabaseAdmin.from("cron_audit_logs").insert({
+      run_id: runId,
+      job_name: jobName,
+      status,
+      metadata,
+    });
+  } catch (err) {
+    console.error("Cron audit log write failed (non-blocking):", err);
+  }
+}
+
 async function matchesRoute({
   activityLine,
   routeId,
@@ -75,7 +98,9 @@ async function matchesRoute({
 // ============================================================================
 
 serve(async () => {
+  const runId = crypto.randomUUID();
   try {
+    await writeCronAuditLog({ runId, jobName: "process-activities", status: "started", metadata: {} });
     logInfo("Processing activities");
 
     const { data: challenge, error: challengeError } = await supabaseAdmin
@@ -86,6 +111,7 @@ serve(async () => {
 
     if (challengeError || !challenge) {
       logError("No active challenge found", challengeError);
+      await writeCronAuditLog({ runId, jobName: "process-activities", status: "completed", metadata: { processed: 0, matched: 0 } });
       return new Response(
         JSON.stringify({ error: "No active challenge" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -103,6 +129,7 @@ serve(async () => {
 
     if (!routes || routes.length === 0) {
       logInfo("No routes configured for challenge", { challengeId: challenge.id });
+      await writeCronAuditLog({ runId, jobName: "process-activities", status: "completed", metadata: { processed: 0, matched: 0 } });
       return new Response(
         JSON.stringify({ message: "No routes configured" }),
         { headers: { "Content-Type": "application/json" } }
@@ -120,6 +147,7 @@ serve(async () => {
 
     if (!activities || activities.length === 0) {
       logInfo("No unprocessed activities");
+      await writeCronAuditLog({ runId, jobName: "process-activities", status: "completed", metadata: { processed: 0, matched: 0 } });
       return new Response(
         JSON.stringify({ message: "No activities to process" }),
         { headers: { "Content-Type": "application/json" } }
@@ -335,6 +363,7 @@ serve(async () => {
     }
 
     logInfo("Activity processing completed", { processed, matched });
+    await writeCronAuditLog({ runId, jobName: "process-activities", status: "completed", metadata: { processed, matched } });
 
     return new Response(
       JSON.stringify({ message: "Processing completed", processed, matched }),
@@ -344,6 +373,12 @@ serve(async () => {
     );
   } catch (err) {
     logError("Processing failed", err);
+    await writeCronAuditLog({
+      runId,
+      jobName: "process-activities",
+      status: "failed",
+      metadata: { error: err instanceof Error ? err.message : String(err) },
+    });
     return new Response(
       JSON.stringify({ error: "Processing failed" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

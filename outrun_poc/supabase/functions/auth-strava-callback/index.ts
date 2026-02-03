@@ -267,12 +267,30 @@ serve(async (req) => {
 
     logInfo("Strava OAuth callback completed", { userId });
 
-    return new Response(JSON.stringify({ success: true, userId }), {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
+    // Generate magic-link token so client can establish session via verifyOtp
+    const authEmail = `strava_${athlete.id}@strava.local`;
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: authEmail,
     });
+    if (linkError) {
+      logError("Failed to generate session link (non-blocking)", linkError);
+    }
+    const tokenHash = linkData?.properties?.hashed_token ?? (linkData as { hashed_token?: string } | null)?.hashed_token ?? null;
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        userId,
+        ...(tokenHash ? { token_hash: tokenHash, type: "magiclink" } : {}),
+      }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (err) {
     logError("OAuth callback failed", err);
     return new Response(JSON.stringify({ error: "OAuth error" }), {

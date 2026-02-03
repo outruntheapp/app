@@ -54,14 +54,18 @@ export default function AuthCallbackPage() {
         const data = await response.json();
 
         if (data.success && data.userId) {
-          // Clear stored email after successful auth
           clearStoredEmail();
 
-          // Sign in the user using the email we created
-          // Note: This assumes the edge function created an auth user
-          // The email format is strava_{athlete_id}@strava.local
-          // For MVP, we'll redirect and let the dashboard handle auth state
-          // In production, you might want to return a session token from the edge function
+          // Establish session so getSession/getUser work on dashboard (name, admin, etc.)
+          if (data.token_hash && data.type) {
+            const { error: verifyError } = await supabase.auth.verifyOtp({
+              token_hash: data.token_hash,
+              type: data.type,
+            });
+            if (verifyError) {
+              console.warn("Session verify failed (continuing to dashboard):", verifyError.message);
+            }
+          }
           router.replace("/dashboard");
         } else {
           throw new Error("Auth callback did not return success");

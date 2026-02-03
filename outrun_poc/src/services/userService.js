@@ -20,7 +20,14 @@ export async function fetchCurrentUser() {
         .eq("id", authUser.id)
         .single();
       if (error) throw error;
-      return data;
+      // Ensure display name: prefer users.full_name, then auth user_metadata, then email local part
+      const fullName =
+        data?.full_name?.trim() ||
+        authUser?.user_metadata?.full_name?.trim() ||
+        authUser?.user_metadata?.name?.trim() ||
+        (authUser?.email ? authUser.email.replace(/@.*$/, "").trim() : "") ||
+        "Runner";
+      return data ? { ...data, full_name: fullName } : { id: authUser.id, full_name: fullName };
     }
 
     // Otherwise use demo user only when demo mode is on
@@ -32,7 +39,9 @@ export async function fetchCurrentUser() {
           .select("*")
           .eq("id", demoUser.id)
           .single();
-        return data || demoUser;
+        const merged = data || demoUser;
+        const fullName = merged?.full_name?.trim() || demoUser?.full_name || "Runner";
+        return merged ? { ...merged, full_name: fullName } : { ...demoUser, full_name: fullName };
       }
     }
 

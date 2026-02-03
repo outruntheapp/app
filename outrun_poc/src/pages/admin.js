@@ -1,5 +1,5 @@
 // src/pages/admin.js
-// Purpose: Admin management — sign-in (allowlist), challenges CRUD, audit logs.
+// Purpose: Admin management — allowlist by email when signed in; challenges CRUD, audit logs.
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
@@ -23,7 +23,7 @@ import {
 } from "@mui/material";
 import AppHeader from "../components/common/AppHeader";
 import { supabase } from "../services/supabaseClient";
-import { getAdminUser, isAllowedAdminEmail } from "../utils/adminAuth";
+import { getAdminUser } from "../utils/adminAuth";
 import ParticipantTable from "../components/admin/ParticipantTable";
 import ExportWinnersButton from "../components/admin/ExportWinnersButton";
 
@@ -41,9 +41,6 @@ function getAuthHeaders() {
 export default function AdminPage() {
   const router = useRouter();
   const [authState, setAuthState] = useState("loading"); // loading | signed_out | denied | admin
-  const [adminEmail, setAdminEmail] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpError, setOtpError] = useState("");
   const [denyMessage, setDenyMessage] = useState("");
 
   const [challenges, setChallenges] = useState([]);
@@ -129,22 +126,6 @@ export default function AdminPage() {
     if (authState === "admin" && tabValue === 1) loadAuditLogs();
   }, [authState, tabValue, loadAuditLogs]);
 
-  const handleSendOtp = async () => {
-    const email = adminEmail.trim().toLowerCase();
-    if (!email) return;
-    setOtpError("");
-    if (!isAllowedAdminEmail(email)) {
-      setOtpError("Access denied. This email is not allowed to access Admin.");
-      return;
-    }
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) {
-      setOtpError(error.message || "Failed to send link.");
-      return;
-    }
-    setOtpSent(true);
-  };
-
   const handleAddChallenge = async () => {
     setAddError("");
     const name = addName.trim();
@@ -222,28 +203,9 @@ export default function AdminPage() {
         <AppHeader />
         <Container maxWidth="xs" sx={{ py: 4 }}>
           <Stack spacing={2}>
-            <Typography variant="h6">Admin sign-in</Typography>
-            {otpSent ? (
-              <Alert severity="success">
-                Check your email for the sign-in link. You can close this page after clicking the link.
-              </Alert>
-            ) : (
-              <>
-                <TextField
-                  label="Email"
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  fullWidth
-                />
-                {otpError && <Alert severity="error">{otpError}</Alert>}
-                <Button variant="contained" onClick={handleSendOtp} disabled={!adminEmail.trim()}>
-                  Send sign-in link
-                </Button>
-              </>
-            )}
-            <Button component="a" href="/">
-              Back to home
+            <Alert severity="info">Sign in to access Admin.</Alert>
+            <Button component="a" href="/" variant="contained">
+              Go to home
             </Button>
           </Stack>
         </Container>

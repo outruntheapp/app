@@ -11,7 +11,6 @@ import { fetchActiveChallenge } from "../services/challengeService";
 import { isCurrentUserParticipant } from "../services/participantService";
 import { isDemoMode, disableDemoMode } from "../utils/demoMode";
 import { checkStravaConnectionByEmail } from "../services/authService";
-import Link from "next/link";
 import name from "../assets/name.png";
 import logo from "../assets/logo.png";
 
@@ -142,21 +141,15 @@ export default function LandingPage() {
         pb: 6,
       }}
     >
-      {/* Admin + Demo Mode - top right */}
+      {/* Demo Mode - top right */}
       <Box
         sx={{
           position: "absolute",
           top: 16,
           right: 16,
           zIndex: 1000,
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
         }}
       >
-        <Button component={Link} href="/admin" variant="outlined" size="small">
-          Admin
-        </Button>
         <Chip
           label={demoMode ? "Demo Mode ON" : "Demo Mode OFF"}
           color={demoMode ? "primary" : "default"}

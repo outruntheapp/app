@@ -13,6 +13,7 @@ import RulesDialog from "./RulesDialog";
 import { fetchActiveChallenge } from "../../services/challengeService";
 import { supabase } from "../../services/supabaseClient";
 import { isDemoMode, disableDemoMode } from "../../utils/demoMode";
+import { getAdminUser } from "../../utils/adminAuth";
 
 export default function AppHeader({ show = true, hideNav = false }) {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function AppHeader({ show = true, hideNav = false }) {
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [challenge, setChallenge] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const isLandingPage = router.pathname === "/";
 
   useEffect(() => {
@@ -28,6 +30,15 @@ export default function AppHeader({ show = true, hideNav = false }) {
       loadChallenge();
     }
   }, [isLandingPage]);
+
+  useEffect(() => {
+    if (hideNav || isLandingPage) return;
+    getAdminUser(supabase).then(({ isAdmin: admin }) => setIsAdmin(admin));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      getAdminUser(supabase).then(({ isAdmin: admin }) => setIsAdmin(admin));
+    });
+    return () => subscription?.unsubscribe();
+  }, [hideNav, isLandingPage]);
 
   const loadChallenge = async () => {
     try {
@@ -44,6 +55,7 @@ export default function AppHeader({ show = true, hideNav = false }) {
     { label: "Dashboard", path: "/dashboard" },
     { label: "Routes", path: "/routes" },
     { label: "Leaderboard", path: "/leaderboard" },
+    ...(isAdmin ? [{ label: "Admin", path: "/admin" }] : []),
   ];
 
   const handleMobileMenuOpen = (event) => {

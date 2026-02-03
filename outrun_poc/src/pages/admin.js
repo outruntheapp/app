@@ -1,5 +1,5 @@
 // src/pages/admin.js
-// Purpose: Admin management — allowlist by email when signed in; challenges CRUD, audit logs.
+// Purpose: Admin management — access when users.role === 'admin'; challenges CRUD, audit logs.
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
@@ -64,7 +64,7 @@ export default function AdminPage() {
     }
     if (!isAdmin) {
       setAuthState("denied");
-      setDenyMessage("Your email is not allowed to access Admin.");
+      setDenyMessage("Your account does not have admin access.");
       return;
     }
     setAuthState("admin");

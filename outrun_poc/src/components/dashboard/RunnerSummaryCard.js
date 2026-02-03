@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Paper, Typography, Box, Avatar, CircularProgress } from "@mui/material";
 import { fetchCurrentUser } from "../../services/userService";
 import { fetchActiveChallenge, calculateDaysRemaining } from "../../services/challengeService";
+import { supabase } from "../../services/supabaseClient";
 import LoadingState from "../common/LoadingState";
 
 export default function RunnerSummaryCard() {
@@ -14,6 +15,14 @@ export default function RunnerSummaryCard() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Refetch when auth state changes (e.g. session restored) so name appears after sign-in
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      loadData();
+    });
+    return () => subscription?.unsubscribe();
   }, []);
 
   const loadData = async () => {

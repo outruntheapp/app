@@ -8,10 +8,13 @@ import { DEMO_USER_ID } from "../../demo/demoData";
 
 export async function fetchCurrentUser() {
   try {
-    // Prioritize real auth user: if signed in and not demo user, show that user only
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+    // Use session from storage first (reliable on load), then fallback to getUser()
+    const { data: { session } } = await supabase.auth.getSession();
+    let authUser = session?.user;
+    if (!authUser) {
+      const { data: { user } } = await supabase.auth.getUser();
+      authUser = user;
+    }
 
     if (authUser && authUser.id !== DEMO_USER_ID) {
       const { data, error } = await supabase

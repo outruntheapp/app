@@ -55,7 +55,6 @@ export default function AppHeader({ show = true, hideNav = false }) {
     { label: "Dashboard", path: "/dashboard" },
     { label: "Routes", path: "/routes" },
     { label: "Leaderboard", path: "/leaderboard" },
-    ...(isAdmin ? [{ label: "Admin", path: "/admin" }] : []),
   ];
 
   const handleMobileMenuOpen = (event) => {
@@ -115,6 +114,25 @@ export default function AppHeader({ show = true, hideNav = false }) {
           px: { xs: 2, sm: 3 },
         }}
       >
+        {/* Admin - Far left, only for users with role === admin */}
+        {!hideNav && !isLandingPage && isAdmin && (
+          <Box sx={{ mr: 1, zIndex: 1 }}>
+            <Button
+              component={Link}
+              href="/admin"
+              color="inherit"
+              size="small"
+              sx={{
+                color: "white",
+                textTransform: "none",
+                "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
+              }}
+            >
+              Admin
+            </Button>
+          </Box>
+        )}
+
         {/* Name and Logo - Centered, stacked vertically */}
         <Box
           sx={{
@@ -180,6 +198,11 @@ export default function AppHeader({ show = true, hideNav = false }) {
                   open={Boolean(mobileMenuAnchor)}
                   onClose={handleMobileMenuClose}
                 >
+                  {isAdmin && (
+                    <MenuItem onClick={() => handleNavClick("/admin")} selected={router.pathname === "/admin"}>
+                      Admin
+                    </MenuItem>
+                  )}
                   {navLinks.map((link) => (
                     <MenuItem
                       key={link.path}

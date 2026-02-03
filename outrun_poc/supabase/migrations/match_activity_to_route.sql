@@ -1,8 +1,8 @@
 -- Purpose: Compare activity polyline against buffered route.
 -- Called by the process-activities edge function.
 -- Activity polyline must be Google encoded polyline (Strava map.summary_polyline), precision 5.
--- Route gpx_geo is normalized to precision-5 geography for comparison so GPX-derived routes
--- match the same format as Strava.
+-- When routes.polyline is set, use it (decode with precision 5) so route and activity are same format;
+-- else fall back to normalizing route from gpx_geo (encode then decode at precision 5).
 
 create or replace function match_activity_to_route(
   activity_polyline text,
@@ -10,6 +10,7 @@ create or replace function match_activity_to_route(
 ) returns boolean as $$
 declare
   route geography;
+  route_polyline text;
   route_encoded text;
   route_geo_5 geography;
   activity geography;
@@ -18,8 +19,8 @@ declare
   overlap_ratio numeric;
 begin
   -- Guard: no route row or null gpx_geo
-  select gpx_geo, buffer_meters, min_overlap_ratio
-    into route, buf_meters, min_overlap
+  select gpx_geo, polyline, buffer_meters, min_overlap_ratio
+    into route, route_polyline, buf_meters, min_overlap
     from routes where id = route_id;
   if route is null then
     return false;
@@ -38,9 +39,13 @@ begin
     return false;
   end if;
 
-  -- Normalize route to precision-5 geography (same format as Strava)
-  route_encoded := ST_AsEncodedPolyline(route::geometry, 5);
-  route_geo_5 := ST_LineFromEncodedPolyline(route_encoded, 5)::geography;
+  -- Route geography for comparison: use stored polyline when present, else normalize from gpx_geo
+  if route_polyline is not null and trim(route_polyline) != '' then
+    route_geo_5 := ST_LineFromEncodedPolyline(route_polyline, 5)::geography;
+  else
+    route_encoded := ST_AsEncodedPolyline(route::geometry, 5);
+    route_geo_5 := ST_LineFromEncodedPolyline(route_encoded, 5)::geography;
+  end if;
 
   -- Guard: zero-length route after normalization
   if ST_Length(route_geo_5) = 0 then

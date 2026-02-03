@@ -12,12 +12,12 @@ const USER_EMAIL_STORAGE_KEY = "outrun_user_email";
  * Check if a user with the given email has Strava connected
  * Uses secure RPC function to bypass RLS restrictions
  * @param {string} email - User's email address
- * @returns {Promise<{hasStrava: boolean, userId: string | null}>}
+ * @returns {Promise<{hasStrava: boolean, userId: string | null, hasToken: boolean}>}
  */
 export async function checkStravaConnectionByEmail(email) {
   try {
     if (!email || typeof email !== "string") {
-      return { hasStrava: false, userId: null };
+      return { hasStrava: false, userId: null, hasToken: false };
     }
 
     const trimmedEmail = email.trim().toLowerCase();
@@ -35,22 +35,44 @@ export async function checkStravaConnectionByEmail(email) {
         console.error('RPC function check_strava_connection_by_email does not exist. Please apply migration 04_check_strava_by_email.sql to your Supabase database.');
       }
       
-      return { hasStrava: false, userId: null };
+      return { hasStrava: false, userId: null, hasToken: false };
     }
 
     if (!data) {
-      return { hasStrava: false, userId: null };
+      return { hasStrava: false, userId: null, hasToken: false };
     }
 
     // Parse JSONB result from RPC
     const result = {
       hasStrava: data.hasStrava === true,
       userId: data.userId || null,
+      hasToken: data.hasToken === true,
     };
     return result;
   } catch (err) {
     logError("Failed to check Strava connection by email", err);
-    return { hasStrava: false, userId: null };
+    return { hasStrava: false, userId: null, hasToken: false };
+  }
+}
+
+/**
+ * Get Strava connection and token status for the current signed-in user (auth.uid()).
+ * @returns {Promise<{hasStrava: boolean, hasToken: boolean}>}
+ */
+export async function getStravaConnectionStatus() {
+  try {
+    const { data, error } = await supabase.rpc("get_strava_connection_status");
+    if (error) {
+      logError("Failed to get Strava connection status", error);
+      return { hasStrava: false, hasToken: false };
+    }
+    return {
+      hasStrava: data?.hasStrava === true,
+      hasToken: data?.hasToken === true,
+    };
+  } catch (err) {
+    logError("Failed to get Strava connection status", err);
+    return { hasStrava: false, hasToken: false };
   }
 }
 

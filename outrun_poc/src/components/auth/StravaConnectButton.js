@@ -7,7 +7,7 @@ import { Button } from "@mui/material";
 import { connectStrava } from "../../services/authService";
 import { supabase } from "../../services/supabaseClient";
 
-export default function StravaConnectButton({ email = null, hasStrava = false }) {
+export default function StravaConnectButton({ email = null, hasStrava = false, hasToken = true }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -108,7 +108,25 @@ export default function StravaConnectButton({ email = null, hasStrava = false })
     }
   };
 
-  // If user has Strava, show ENTER button
+  // Strava linked but no token: show Reconnect Strava (same OAuth flow)
+  if (hasStrava && !hasToken) {
+    const handleReconnect = () => {
+      setLoading(true);
+      connectStrava(email);
+    };
+    return (
+      <Button
+        variant="contained"
+        fullWidth
+        onClick={handleReconnect}
+        disabled={loading}
+      >
+        {loading ? "Connecting..." : "Reconnect Strava"}
+      </Button>
+    );
+  }
+
+  // Strava linked and has token: show ENTER button
   if (hasStrava) {
     return (
       <Button

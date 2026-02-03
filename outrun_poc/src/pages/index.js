@@ -24,6 +24,7 @@ export default function LandingPage() {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [hasStrava, setHasStrava] = useState(null); // null = not checked, true/false = checked
+  const [hasToken, setHasToken] = useState(null); // null = not checked; true/false when hasStrava
   const [checkingStrava, setCheckingStrava] = useState(false);
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function LandingPage() {
       setEmail("");
       setEmailError("");
       setHasStrava(null);
+      setHasToken(null);
     } catch (err) {
       console.error("Failed to join challenge", err);
       alert("Failed to join challenge. Please try again.");
@@ -95,6 +97,7 @@ export default function LandingPage() {
     try {
       const result = await checkStravaConnectionByEmail(email);
       setHasStrava(result.hasStrava);
+      setHasToken(result.hasToken);
     } catch (err) {
       console.error("Failed to check Strava connection", err);
       setEmailError("Failed to check connection. Please try again.");
@@ -254,7 +257,7 @@ export default function LandingPage() {
 
                 {hasStrava !== null && (
                   <Box sx={{ mt: 1 }}>
-                    <StravaConnectButton email={email} hasStrava={hasStrava} />
+                    <StravaConnectButton email={email} hasStrava={hasStrava} hasToken={hasToken} />
                   </Box>
                 )}
 

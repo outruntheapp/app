@@ -2,15 +2,17 @@
 // Purpose: Display runner profile and challenge summary
 
 import { useState, useEffect } from "react";
-import { Paper, Typography, Box, Avatar, CircularProgress } from "@mui/material";
+import { Paper, Typography, Box, Avatar, Button } from "@mui/material";
 import { fetchCurrentUser } from "../../services/userService";
 import { fetchActiveChallenge, calculateDaysRemaining } from "../../services/challengeService";
+import { getStravaConnectionStatus, connectStrava } from "../../services/authService";
 import { supabase } from "../../services/supabaseClient";
 import LoadingState from "../common/LoadingState";
 
 export default function RunnerSummaryCard() {
   const [user, setUser] = useState(null);
   const [challenge, setChallenge] = useState(null);
+  const [stravaStatus, setStravaStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,12 +30,14 @@ export default function RunnerSummaryCard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [userData, challengeData] = await Promise.all([
+      const [userData, challengeData, stravaData] = await Promise.all([
         fetchCurrentUser(),
         fetchActiveChallenge(),
+        getStravaConnectionStatus(),
       ]);
       setUser(userData);
       setChallenge(challengeData);
+      setStravaStatus(stravaData);
     } catch (err) {
       console.error("Failed to load dashboard data", err);
     } finally {
@@ -74,9 +78,20 @@ export default function RunnerSummaryCard() {
           <Typography variant="subtitle1" sx={{ fontSize: "0.95rem", fontWeight: 600 }} noWrap>
             {userName}
           </Typography>
-          <Typography variant="caption" color="text.primary" sx={{ fontSize: "0.75rem" }}>
-            Strava Connected
-          </Typography>
+          {stravaStatus?.hasStrava && !stravaStatus?.hasToken ? (
+            <Button
+              variant="text"
+              size="small"
+              sx={{ fontSize: "0.75rem", textTransform: "none", p: 0, minWidth: 0 }}
+              onClick={() => (user?.email ? connectStrava(user.email) : window.location.assign("/"))}
+            >
+              Reconnect Strava
+            </Button>
+          ) : (
+            <Typography variant="caption" color="text.primary" sx={{ fontSize: "0.75rem" }}>
+              Strava Connected
+            </Typography>
+          )}
         </Box>
       </Box>
 

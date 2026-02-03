@@ -37,19 +37,46 @@ export default function StravaConnectButton({ email = null, hasStrava = false })
     try {
       setLoading(true);
 
-      // Check if user is authenticated
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
-        // User is authenticated, redirect to dashboard
         router.push("/dashboard");
-      } else {
-        // User not authenticated
-        // For MVP, redirect to dashboard and let it handle auth state
-        // The dashboard will show appropriate UI if user needs to sign in
-        // In future, we could implement magic link sign-in here
-        router.push("/dashboard");
+        return;
       }
+
+      // No session but hasStrava: return sign-in via Edge Function (magic-link token)
+      if (hasStrava && email) {
+        const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/auth-return-signin`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && data.success && data.token_hash && data.type) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: data.token_hash,
+            type: data.type,
+          });
+          if (verifyError) {
+            console.warn("Session verify failed:", verifyError.message);
+            alert("Sign-in failed. Please try again or reconnect with Strava.");
+            return;
+          }
+          router.push("/dashboard");
+          return;
+        }
+
+        const msg = data.error || "Sign-in not available";
+        alert(msg);
+        return;
+      }
+
+      router.push("/dashboard");
     } catch (err) {
       console.error("Enter failed", err);
       alert("Failed to sign in. Please try again.");

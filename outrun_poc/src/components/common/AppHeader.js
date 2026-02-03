@@ -12,6 +12,7 @@ import logo from "../../assets/logo.png";
 import RulesDialog from "./RulesDialog";
 import { fetchActiveChallenge } from "../../services/challengeService";
 import { supabase } from "../../services/supabaseClient";
+import { clearStoredEmail } from "../../services/authService";
 import { isDemoMode, disableDemoMode } from "../../utils/demoMode";
 import { getAdminUser } from "../../utils/adminAuth";
 
@@ -78,14 +79,15 @@ export default function AppHeader({ show = true, hideNav = false }) {
   const handleLogout = async () => {
     handleMobileMenuClose();
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       if (typeof window !== "undefined" && isDemoMode()) {
         await disableDemoMode();
       }
-      router.push("/");
+      clearStoredEmail();
+      window.location.replace("/");
     } catch (err) {
       console.error("Logout failed", err);
-      router.push("/");
+      window.location.replace("/");
     }
   };
 

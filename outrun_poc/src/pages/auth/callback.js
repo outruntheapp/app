@@ -4,7 +4,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../../services/supabaseClient";
-import { getStoredEmail, clearStoredEmail } from "../../services/authService";
+import { clearStoredEmail } from "../../services/authService";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -18,8 +18,8 @@ export default function AuthCallbackPage() {
       }
 
       try {
-        // Get stored email from localStorage if available
-        const userEmail = getStoredEmail();
+        // Clear stored email so we never send a stale email with this code (avoids user 1/2 data leak)
+        clearStoredEmail();
 
         // Check if this is a demo OAuth (code starts with "demo_code_")
         const isDemo = typeof code === "string" && code.startsWith("demo_code_");
@@ -33,9 +33,9 @@ export default function AuthCallbackPage() {
               Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
               ...(isDemo ? { "x-demo-mode": "true" } : {}), // Signal demo mode
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               code,
-              userEmail: userEmail || null, // Pass email if available
+              userEmail: null,
             }),
           }
         );

@@ -10,7 +10,7 @@ import RulesDialog from "../components/common/RulesDialog";
 import { fetchActiveChallenge } from "../services/challengeService";
 import { isCurrentUserParticipant } from "../services/participantService";
 import { isDemoMode, disableDemoMode } from "../utils/demoMode";
-import { checkStravaConnectionByEmail } from "../services/authService";
+import { checkStravaConnectionByEmail, clearStoredEmail } from "../services/authService";
 import name from "../assets/name.png";
 import logo from "../assets/logo.png";
 
@@ -28,6 +28,7 @@ export default function LandingPage() {
   const [checkingStrava, setCheckingStrava] = useState(false);
 
   useEffect(() => {
+    clearStoredEmail();
     loadData();
     setDemoMode(isDemoMode());
   }, []);

@@ -7,6 +7,7 @@ import { fetchCurrentUser } from "../../services/userService";
 import { fetchActiveChallenge, calculateDaysRemaining } from "../../services/challengeService";
 import { getStravaConnectionStatus, connectStrava } from "../../services/authService";
 import { supabase } from "../../services/supabaseClient";
+import { OUTRUN_BURNT, OUTRUN_WHITE } from "../../styles/theme";
 import LoadingState from "../common/LoadingState";
 
 export default function RunnerSummaryCard() {
@@ -80,9 +81,14 @@ export default function RunnerSummaryCard() {
           </Typography>
           {stravaStatus?.hasStrava && !stravaStatus?.hasToken ? (
             <Button
-              variant="text"
+              variant="contained"
               size="small"
-              sx={{ fontSize: "0.75rem", textTransform: "none", p: 0, minWidth: 0 }}
+              sx={{
+                fontSize: "0.75rem",
+                textTransform: "none",
+                bgcolor: OUTRUN_BURNT,
+                color: OUTRUN_WHITE,
+              }}
               onClick={() => (user?.email ? connectStrava(user.email) : window.location.assign("/"))}
             >
               Reconnect Strava

@@ -14,13 +14,19 @@ create extension if not exists "postgis";
 -- ============================================================================
 
 -- Users (synced from Supabase Auth)
-create table if not exists users (
-  id uuid primary key references auth.users(id) on delete cascade,
-  strava_athlete_id bigint unique,
-  full_name text,
-  sex text,
-  created_at timestamptz default now()
-);
+create table if not exists public.users (
+  id uuid not null,
+  strava_athlete_id bigint null,
+  full_name text null,
+  sex text null,
+  created_at timestamp with time zone null default now(),
+  email text null,
+  role text not null default 'participant'::text,
+  constraint users_pkey primary key (id),
+  constraint users_email_key unique (email),
+  constraint users_strava_athlete_id_key unique (strava_athlete_id),
+  constraint users_id_fkey foreign key (id) references auth.users (id) on delete cascade
+) tablespace pg_default;
 
 -- Challenges
 create table if not exists challenges (

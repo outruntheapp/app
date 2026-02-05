@@ -69,7 +69,11 @@ export default function LandingPage() {
         if (result.success) {
           await loadData();
         } else {
-          alert(result.error || "Failed to join challenge. Please try again.");
+          if (result.code === "TICKET_REQUIRED") {
+            alert("You need a valid OUTRUN ticket to join. Purchase at Entry Ninja: https://www.entryninja.com/events/83346-outrun-virtual-run");
+          } else {
+            alert(result.error || "Failed to join challenge. Please try again.");
+          }
         }
         return;
       }
@@ -244,6 +248,13 @@ export default function LandingPage() {
                 >
                   Rules
                 </Button>
+
+                <Typography variant="caption" display="block" color="text.secondary" sx={{ textAlign: "center" }}>
+                  Event is ticketed via{" "}
+                  <a href="https://www.entryninja.com/events/83346-outrun-virtual-run" target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>
+                    Entry Ninja
+                  </a>
+                </Typography>
 
                 {!isParticipant && !demoMode && (
                   <Alert severity="info" sx={{ mt: 1 }}>

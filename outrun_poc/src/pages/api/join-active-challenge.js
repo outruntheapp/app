@@ -1,7 +1,9 @@
 // src/pages/api/join-active-challenge.js
 // POST: ensure current user is a participant for the active challenge (insert if missing).
+// Gated by challenge_ticket_holders; admins (users.role = 'admin') bypass.
 
 import { createClient } from "@supabase/supabase-js";
+import { hasValidTicketForChallenge } from "../../lib/ticketValidation";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -54,6 +56,25 @@ export default async function handler(req, res) {
     return res.status(200).json({ joined: true });
   }
 
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("email, role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const allowed = await hasValidTicketForChallenge(
+    supabase,
+    activeChallenge.id,
+    userRow?.email ?? null,
+    userRow?.role ?? null
+  );
+  if (!allowed) {
+    return res.status(403).json({
+      error: "No valid ticket",
+      code: "TICKET_REQUIRED",
+    });
+  }
+
   const { error: insertError } = await supabase.from("participants").insert({
     user_id: user.id,
     challenge_id: activeChallenge.id,
@@ -61,7 +82,6 @@ export default async function handler(req, res) {
   });
 
   if (insertError) {
-    // Conflict = already inserted by another request
     if (insertError.code === "23505") {
       return res.status(200).json({ joined: true });
     }

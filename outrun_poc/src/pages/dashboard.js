@@ -1,15 +1,31 @@
 // src/pages/dashboard.js
 // Purpose: Runner dashboard page
 
-import { Stack, Container, Button, Box } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Stack, Container, Button, Box, Alert, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import AppHeader from "../components/common/AppHeader";
 import RunnerSummaryCard from "../components/dashboard/RunnerSummaryCard";
 import StageProgressList from "../components/dashboard/StageProgressList";
 import RankCard from "../components/dashboard/RankCard";
+import { isCurrentUserParticipant } from "../services/participantService";
+import { supabase } from "../services/supabaseClient";
+
+const ENTRY_NINJA_URL = "https://www.entryninja.com/events/83346-outrun-virtual-run";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [showTicketCta, setShowTicketCta] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const isParticipant = await isCurrentUserParticipant();
+      if (mounted && user && !isParticipant) setShowTicketCta(true);
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <Box
@@ -53,6 +69,14 @@ export default function DashboardPage() {
               },
             }}
           >
+            {showTicketCta && (
+              <Alert severity="info" sx={{ "& a": { color: "inherit", textDecoration: "underline" } }}>
+                <Typography variant="body2">
+                  You&apos;re not registered for this challenge. Get your ticket at{" "}
+                  <a href={ENTRY_NINJA_URL} target="_blank" rel="noopener noreferrer">Entry Ninja</a>.
+                </Typography>
+              </Alert>
+            )}
             <RunnerSummaryCard />
             <StageProgressList />
             <RankCard />

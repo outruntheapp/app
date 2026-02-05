@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { supabaseAdmin } from "../_shared/supabase.ts";
 import { logInfo, logError } from "../_shared/logger.ts";
+import { hasValidTicketForChallenge } from "../_shared/ticketValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,7 +44,7 @@ serve(async (req) => {
 
     const { data: userRow, error: selectError } = await supabaseAdmin
       .from("users")
-      .select("id, strava_athlete_id")
+      .select("id, strava_athlete_id, role")
       .eq("email", trimmedEmail)
       .not("strava_athlete_id", "is", null)
       .maybeSingle();
@@ -64,7 +65,7 @@ serve(async (req) => {
       );
     }
 
-    // Ensure participant for current active challenge (so return sign-in adds user to new challenge)
+    // Ensure participant for current active challenge (gated by ticket; admins bypass)
     const { data: activeChallenge } = await supabaseAdmin
       .from("challenges")
       .select("id")
@@ -78,21 +79,31 @@ serve(async (req) => {
         .eq("challenge_id", activeChallenge.id)
         .maybeSingle();
       if (!existingParticipant) {
-        const { error: participantInsertError } = await supabaseAdmin
-          .from("participants")
-          .insert({
-            user_id: userRow.id,
-            challenge_id: activeChallenge.id,
-            excluded: false,
-          });
-        if (participantInsertError) {
-          logError("Return sign-in: participant insert failed (non-blocking)", {
-            userId: userRow.id,
-            challengeId: activeChallenge.id,
-            error: participantInsertError.message,
-          });
+        const allowed = await hasValidTicketForChallenge(
+          supabaseAdmin,
+          activeChallenge.id,
+          trimmedEmail,
+          userRow?.role ?? null
+        );
+        if (allowed) {
+          const { error: participantInsertError } = await supabaseAdmin
+            .from("participants")
+            .insert({
+              user_id: userRow.id,
+              challenge_id: activeChallenge.id,
+              excluded: false,
+            });
+          if (participantInsertError) {
+            logError("Return sign-in: participant insert failed (non-blocking)", {
+              userId: userRow.id,
+              challengeId: activeChallenge.id,
+              error: participantInsertError.message,
+            });
+          } else {
+            logInfo("Return sign-in: created participant for active challenge", { userId: userRow.id });
+          }
         } else {
-          logInfo("Return sign-in: created participant for active challenge", { userId: userRow.id });
+          logInfo("Return sign-in: skipped participant (no valid ticket)", { userId: userRow.id });
         }
       }
     }

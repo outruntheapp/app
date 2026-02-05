@@ -20,6 +20,10 @@ import {
   Tabs,
   Tab,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import AppHeader from "../components/common/AppHeader";
 import { supabase } from "../services/supabaseClient";
@@ -65,6 +69,10 @@ export default function AdminPage() {
   const [cronHasMore, setCronHasMore] = useState(false);
   const [participants, setParticipants] = useState([]);
   const [participantsLoading, setParticipantsLoading] = useState(false);
+  const [ticketHoldersChallengeId, setTicketHoldersChallengeId] = useState("");
+  const [ticketHoldersFile, setTicketHoldersFile] = useState(null);
+  const [ticketHoldersUploading, setTicketHoldersUploading] = useState(false);
+  const [ticketHoldersResult, setTicketHoldersResult] = useState(null);
 
   const checkAuth = useCallback(async () => {
     const { user, isAdmin } = await getAdminUser(supabase);
@@ -259,6 +267,35 @@ export default function AdminPage() {
     }
   };
 
+  const handleTicketHoldersUpload = async () => {
+    if (!ticketHoldersChallengeId || !ticketHoldersFile) return;
+    const headers = await getAuthHeaders();
+    if (!headers.Authorization) return;
+    setTicketHoldersUploading(true);
+    setTicketHoldersResult(null);
+    try {
+      const form = new FormData();
+      form.append("challenge_id", ticketHoldersChallengeId);
+      form.append("file", ticketHoldersFile);
+      const res = await fetch("/api/admin/ticket-holders", {
+        method: "POST",
+        headers: { Authorization: headers.Authorization },
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTicketHoldersResult({ error: data.error || res.statusText });
+        return;
+      }
+      setTicketHoldersResult({ imported: data.imported, skipped: data.skipped, errors: data.errors });
+      setTicketHoldersFile(null);
+    } catch (e) {
+      setTicketHoldersResult({ error: e.message || "Upload failed" });
+    } finally {
+      setTicketHoldersUploading(false);
+    }
+  };
+
   const handleParticipantToggle = async (row) => {
     const { user } = await getAdminUser(supabase);
     if (!user?.id || row.participant_id == null) return;
@@ -373,6 +410,59 @@ export default function AdminPage() {
                 {reimportMessage.text}
               </Alert>
             )}
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Ticket holders (Entry Ninja CSV)
+              </Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-end" sx={{ flexWrap: "wrap" }}>
+                <FormControl size="small" sx={{ minWidth: 220 }}>
+                  <InputLabel>Challenge</InputLabel>
+                  <Select
+                    value={ticketHoldersChallengeId}
+                    label="Challenge"
+                    onChange={(e) => setTicketHoldersChallengeId(e.target.value)}
+                  >
+                    {challenges.map((c) => (
+                      <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Button variant="outlined" component="label" size="medium">
+                  {ticketHoldersFile ? ticketHoldersFile.name : "Choose CSV"}
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    hidden
+                    onChange={(e) => setTicketHoldersFile(e.target.files?.[0] ?? null)}
+                  />
+                </Button>
+                <Button
+                  variant="contained"
+                  disabled={!ticketHoldersChallengeId || !ticketHoldersFile || ticketHoldersUploading}
+                  onClick={handleTicketHoldersUpload}
+                >
+                  {ticketHoldersUploading ? "Uploading…" : "Upload"}
+                </Button>
+              </Stack>
+              {ticketHoldersResult && (
+                <Box sx={{ mt: 2 }}>
+                  {ticketHoldersResult.error ? (
+                    <Alert severity="error">{ticketHoldersResult.error}</Alert>
+                  ) : (
+                    <>
+                      <Typography variant="body2" color="text.secondary">
+                        Imported: {ticketHoldersResult.imported ?? 0}, Skipped: {ticketHoldersResult.skipped ?? 0}
+                      </Typography>
+                      {ticketHoldersResult.errors?.length > 0 && (
+                        <Typography variant="caption" component="pre" sx={{ mt: 1, whiteSpace: "pre-wrap", maxHeight: 120, overflow: "auto" }}>
+                          {ticketHoldersResult.errors.map((e) => `Row ${e.row}: ${e.message}`).join("\n")}
+                        </Typography>
+                      )}
+                    </>
+                  )}
+                </Box>
+              )}
+            </Paper>
             <Paper sx={{ overflow: "auto" }}>
               <Typography variant="subtitle1" sx={{ p: 2 }}>
                 All challenges

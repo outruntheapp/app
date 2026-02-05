@@ -27,6 +27,13 @@ This repository represents a **validation-focused MVP / proof of concept**, desi
 
 ---
 
+## Core schema (reference)
+
+- **public.users**: `id` (uuid, PK, FK to auth.users), `strava_athlete_id` (unique), `full_name`, `sex`, `created_at`, `email` (unique), `role` (default `'participant'`; set to `'admin'` in DB for admin access). Synced from Supabase Auth; email/role added for ticketing and admin.
+- **Challenges, participants, activities, stage_results, routes, audit_logs, strava_tokens**: See `outrun_poc/supabase/migrations/01_initial_schema.sql` and later migrations.
+
+---
+
 ## Repository Structure
 
 ```txt

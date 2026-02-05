@@ -95,7 +95,7 @@ export async function joinActiveChallenge() {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      return { success: false, error: body.error || res.statusText };
+      return { success: false, error: body.error || res.statusText, code: body.code };
     }
 
     const data = await res.json().catch(() => ({}));

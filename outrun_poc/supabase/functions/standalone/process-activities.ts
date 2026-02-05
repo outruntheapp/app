@@ -72,18 +72,18 @@ async function writeCronAuditLog({
 }
 
 /**
- * Calls match_activity_to_route RPC. activityLine must be Google encoded polyline, precision 5
- * (Strava map.summary_polyline); do not truncate or re-encode.
+ * Calls match_activity_to_route_debug RPC; returns matched and overlap_ratio (0–1) for audit metadata.
+ * activityLine must be Google encoded polyline, precision 5 (Strava map.summary_polyline).
  */
-async function matchesRoute({
+async function matchesRouteWithOverlap({
   activityLine,
   routeId,
 }: {
   activityLine: string;
   routeId: string;
-}): Promise<boolean> {
+}): Promise<{ matched: boolean; overlap_ratio: number | null }> {
   const { data: result, error } = await supabaseAdmin.rpc(
-    "match_activity_to_route",
+    "match_activity_to_route_debug",
     {
       activity_polyline: activityLine,
       route_id: routeId,
@@ -94,7 +94,17 @@ async function matchesRoute({
     throw new Error(`Route matching error: ${error.message}`);
   }
 
-  return result === true;
+  if (result == null || typeof result !== "object") {
+    return { matched: false, overlap_ratio: null };
+  }
+
+  const matched = result.matched === true;
+  const overlap_ratio =
+    typeof result.overlap_ratio === "number" && Number.isFinite(result.overlap_ratio)
+      ? result.overlap_ratio
+      : null;
+
+  return { matched, overlap_ratio };
 }
 
 // ============================================================================
@@ -193,7 +203,7 @@ serve(async () => {
             action: "activity.processing.complete",
             entityType: "activity",
             entityId: act.id,
-            metadata: { matched: false },
+            metadata: { matched: false, match_pct: null },
           });
           processed++;
           continue;
@@ -223,16 +233,16 @@ serve(async () => {
             action: "activity.processing.complete",
             entityType: "activity",
             entityId: act.id,
-            metadata: { matched: false },
+            metadata: { matched: false, match_pct: null },
           });
           processed++;
           continue;
         }
 
-        let matchedRoute = null;
+        let matchedRoute: (typeof routes)[0] | null = null;
+        let bestOverlapRatio: number | null = null;
         for (const route of routes) {
           try {
-            // Log route match attempt
             await writeAuditLog({
               actorId: act.user_id,
               action: "route.match.attempt",
@@ -241,10 +251,13 @@ serve(async () => {
               metadata: { stage: route.stage_number },
             });
 
-            const isMatch = await matchesRoute({
-              activityLine: act.polyline, // Strava map.summary_polyline: Google encoded, precision 5
+            const { matched: isMatch, overlap_ratio } = await matchesRouteWithOverlap({
+              activityLine: act.polyline,
               routeId: route.id,
             });
+            if (overlap_ratio != null && (bestOverlapRatio == null || overlap_ratio > bestOverlapRatio)) {
+              bestOverlapRatio = overlap_ratio;
+            }
 
             if (isMatch) {
               matchedRoute = route;
@@ -286,7 +299,7 @@ serve(async () => {
             action: "activity.processing.complete",
             entityType: "activity",
             entityId: act.id,
-            metadata: { matched: false },
+            metadata: { matched: false, match_pct: bestOverlapRatio },
           });
           processed++;
           continue;
@@ -353,7 +366,7 @@ serve(async () => {
           action: "activity.processing.complete",
           entityType: "activity",
           entityId: act.id,
-          metadata: { matched: !!matchedRoute },
+          metadata: { matched: true, match_pct: bestOverlapRatio },
         });
 
         processed++;

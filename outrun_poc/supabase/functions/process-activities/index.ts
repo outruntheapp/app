@@ -3,7 +3,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { supabaseAdmin } from "../_shared/supabase.ts";
-import { matchesRoute } from "../_shared/geo.ts";
+import { matchesRouteWithOverlap } from "../_shared/geo.ts";
 import { logInfo, logError } from "../_shared/logger.ts";
 import { writeAuditLog } from "../_shared/audit.ts";
 
@@ -78,6 +78,13 @@ serve(async () => {
             .from("activities")
             .update({ processed_at: new Date().toISOString() })
             .eq("id", act.id);
+          await writeAuditLog({
+            actorId: act.user_id,
+            action: "activity.processing.complete",
+            entityType: "activity",
+            entityId: act.id,
+            metadata: { matched: false, match_pct: null },
+          });
           processed++;
           continue;
         }
@@ -96,19 +103,29 @@ serve(async () => {
             .from("activities")
             .update({ processed_at: new Date().toISOString() })
             .eq("id", act.id);
+          await writeAuditLog({
+            actorId: act.user_id,
+            action: "activity.processing.complete",
+            entityType: "activity",
+            entityId: act.id,
+            metadata: { matched: false, match_pct: null },
+          });
           processed++;
           continue;
         }
 
-        // 3️⃣ Try to match against each route
-        let matchedRoute = null;
+        // 3️⃣ Try to match against each route (track best overlap for audit)
+        let matchedRoute: (typeof routes)[0] | null = null;
+        let bestOverlapRatio: number | null = null;
         for (const route of routes) {
           try {
-            const isMatch = await matchesRoute({
-              activityLine: act.polyline, // Strava map.summary_polyline: Google encoded, precision 5
+            const { matched: isMatch, overlap_ratio } = await matchesRouteWithOverlap({
+              activityLine: act.polyline,
               routeId: route.id,
             });
-
+            if (overlap_ratio != null && (bestOverlapRatio == null || overlap_ratio > bestOverlapRatio)) {
+              bestOverlapRatio = overlap_ratio;
+            }
             if (isMatch) {
               matchedRoute = route;
               break;
@@ -119,17 +136,22 @@ serve(async () => {
               routeId: route.id,
               error: err,
             });
-            // Continue to next route
             continue;
           }
         }
 
         if (!matchedRoute) {
-          // No match found, mark as processed (silent ignore)
           await supabaseAdmin
             .from("activities")
             .update({ processed_at: new Date().toISOString() })
             .eq("id", act.id);
+          await writeAuditLog({
+            actorId: act.user_id,
+            action: "activity.processing.complete",
+            entityType: "activity",
+            entityId: act.id,
+            metadata: { matched: false, match_pct: bestOverlapRatio },
+          });
           processed++;
           continue;
         }
@@ -183,6 +205,13 @@ serve(async () => {
           .from("activities")
           .update({ processed_at: new Date().toISOString() })
           .eq("id", act.id);
+        await writeAuditLog({
+          actorId: act.user_id,
+          action: "activity.processing.complete",
+          entityType: "activity",
+          entityId: act.id,
+          metadata: { matched: true, match_pct: bestOverlapRatio },
+        });
 
         processed++;
       } catch (err) {

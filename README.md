@@ -260,6 +260,7 @@ Without refactoring core logic.
 ### Admin
 - **Admin access**: Header "Admin" link (far left) for users with `users.role = 'admin'` (set manually in DB). Admin page: Challenges, Audit logs, Participants, **Cron logs**.
 - **Cron logs tab**: GET `/api/admin/cron-audit-logs`; Admin tab shows `cron_audit_logs` (run_id, job_name, status, metadata).
+- **Scheduled jobs (cron)**: `sync-strava-activities` and `process-activities` run automatically via pg_cron + pg_net. Run **`outrun_poc/supabase/sql/cron_schedule.sql`** once in SQL Editor (after replacing PROJECT_REF and SERVICE_ROLE_KEY with values from SUPABASE_URL and SERVICE_ROLE_KEY / SUPABASE_SERVICE_ROLE_KEY). Requires migration 14 (pg_net). Default: hourly; file comments explain daily schedule.
 - **Re-import routes from GPX**: Per-challenge button on Challenges tab; POST `/api/admin/reimport-routes` with `challenge_id`; uses `forceSyncChallengeRoutesFromGpx` to re-run sync from `public/routes/<slug>/stage-*.gpx`.
 
 ### Route Matching

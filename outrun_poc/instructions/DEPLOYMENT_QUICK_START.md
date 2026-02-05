@@ -56,33 +56,13 @@ STRAVA_CLIENT_SECRET=your-strava-client-secret
 APP_BASE_URL=https://your-app-domain.com
 ```
 
-### 2.5 Cron Jobs ☑️
-Run in SQL Editor (replace `PROJECT_ID` and `SERVICE_ROLE_KEY`):
-```sql
--- Sync Strava activities every 30 minutes
-select cron.schedule(
-  'sync-strava',
-  '*/30 * * * *',
-  $$ 
-  select net.http_post(
-    url := 'https://PROJECT_ID.supabase.co/functions/v1/sync-strava-activities',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer SERVICE_ROLE_KEY"}'::jsonb
-  )::text
-  $$
-);
+### 2.5 Cron Jobs (scheduled jobs) ☑️
+1. Ensure migration **14_enable_pg_net.sql** has been applied (enables `pg_net` so cron can call Edge Functions).
+2. Open **`outrun_poc/supabase/sql/cron_schedule.sql`** in the repo.
+3. Replace **PROJECT_REF** and **SERVICE_ROLE_KEY** with your values (use existing Supabase env: **SUPABASE_URL** → project ref, **SERVICE_ROLE_KEY** or **SUPABASE_SERVICE_ROLE_KEY** from Project Settings → API).
+4. Copy the entire file into Supabase SQL Editor and **Run**.
 
--- Process activities every 30 minutes
-select cron.schedule(
-  'process-activities',
-  '*/30 * * * *',
-  $$ 
-  select net.http_post(
-    url := 'https://PROJECT_ID.supabase.co/functions/v1/process-activities',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer SERVICE_ROLE_KEY"}'::jsonb
-  )::text
-  $$
-);
-```
+Default schedule: **hourly** (sync at :00, process at :15). To run **once per day**, change the cron expressions in the file as noted in the comments before running.
 
 ### 2.6 Initial Data ☑️
 Create a challenge:

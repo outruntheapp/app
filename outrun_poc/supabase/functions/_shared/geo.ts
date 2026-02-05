@@ -28,3 +28,39 @@ export async function matchesRoute({
 
   return result === true;
 }
+
+/**
+ * Calls match_activity_to_route_debug RPC; returns matched flag and overlap_ratio (0–1) for audit metadata.
+ * activityLine must be Google encoded polyline, precision 5 (Strava map.summary_polyline).
+ */
+export async function matchesRouteWithOverlap({
+  activityLine,
+  routeId,
+}: {
+  activityLine: string;
+  routeId: string;
+}): Promise<{ matched: boolean; overlap_ratio: number | null }> {
+  const { data: result, error } = await supabaseAdmin.rpc(
+    "match_activity_to_route_debug",
+    {
+      activity_polyline: activityLine,
+      route_id: routeId,
+    }
+  );
+
+  if (error) {
+    throw new Error(`Route matching error: ${error.message}`);
+  }
+
+  if (result == null || typeof result !== "object") {
+    return { matched: false, overlap_ratio: null };
+  }
+
+  const matched = result.matched === true;
+  const overlap_ratio =
+    typeof result.overlap_ratio === "number" && Number.isFinite(result.overlap_ratio)
+      ? result.overlap_ratio
+      : null;
+
+  return { matched, overlap_ratio };
+}

@@ -153,38 +153,12 @@ APP_BASE_URL=https://your-app-domain.com
 
 ## Step 5: Set Up Cron Jobs ☑️
 
-1. Go to **SQL Editor** in Supabase Dashboard
-2. Run the following SQL (replace `PROJECT_ID` with your actual project reference):
+1. Ensure migration **14_enable_pg_net.sql** is applied (enables `pg_net` for cron HTTP calls).
+2. Go to **SQL Editor** in Supabase Dashboard.
+3. Open **`outrun_poc/supabase/sql/cron_schedule.sql`** from the repo. Replace **PROJECT_REF** and **SERVICE_ROLE_KEY** with your values (from existing env: **SUPABASE_URL** → project ref; **SERVICE_ROLE_KEY** or **SUPABASE_SERVICE_ROLE_KEY** from Project Settings → API).
+4. Copy the entire file into the SQL Editor and **Run**.
 
-```sql
--- Schedule Strava sync (every 30 minutes)
-select cron.schedule(
-  'sync-strava',
-  '*/30 * * * *',
-  $$ 
-  select net.http_post(
-    url := 'https://PROJECT_ID.supabase.co/functions/v1/sync-strava-activities',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb
-  )::text
-  $$
-);
-
--- Schedule activity processing (every 30 minutes)
-select cron.schedule(
-  'process-activities',
-  '*/30 * * * *',
-  $$ 
-  select net.http_post(
-    url := 'https://PROJECT_ID.supabase.co/functions/v1/process-activities',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb
-  )::text
-  $$
-);
-```
-
-**Note:** Replace:
-- `PROJECT_ID` with your Supabase project reference (e.g., `ndfgymfsszgqjauhyycv`)
-- `YOUR_SERVICE_ROLE_KEY` with your actual service role key
+Default schedule is **hourly** (sync at :00, process at :15). To run **once per day**, change the cron expressions in the file as noted in the comments before running.
 
 ## Step 6: Verify Deployment 
 

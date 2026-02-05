@@ -59,8 +59,10 @@ export default function AdminPage() {
 
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [auditHasMore, setAuditHasMore] = useState(false);
   const [cronLogs, setCronLogs] = useState([]);
   const [cronLogsLoading, setCronLogsLoading] = useState(false);
+  const [cronHasMore, setCronHasMore] = useState(false);
   const [participants, setParticipants] = useState([]);
   const [participantsLoading, setParticipantsLoading] = useState(false);
 
@@ -105,18 +107,22 @@ export default function AdminPage() {
     }
   }, [checkAuth]);
 
-  const loadAuditLogs = useCallback(async () => {
+  const PAGE_SIZE = 10;
+  const loadAuditLogs = useCallback(async (offset = 0) => {
     const headers = await getAuthHeaders();
     if (!headers.Authorization) return;
     setAuditLoading(true);
     try {
-      const res = await fetch(`${ADMIN_AUDIT_LOGS_URL}?limit=200`, { headers });
+      const res = await fetch(`${ADMIN_AUDIT_LOGS_URL}?limit=${PAGE_SIZE}&offset=${offset}`, { headers });
       if (!res.ok) {
         if (res.status === 403) return checkAuth();
         throw new Error(await res.text());
       }
       const data = await res.json();
-      setAuditLogs(data.logs || []);
+      const logs = data.logs || [];
+      if (offset === 0) setAuditLogs(logs);
+      else setAuditLogs((prev) => [...prev, ...logs]);
+      setAuditHasMore(logs.length === PAGE_SIZE);
     } catch (e) {
       console.error(e);
     } finally {
@@ -124,18 +130,21 @@ export default function AdminPage() {
     }
   }, [checkAuth]);
 
-  const loadCronLogs = useCallback(async () => {
+  const loadCronLogs = useCallback(async (offset = 0) => {
     const headers = await getAuthHeaders();
     if (!headers.Authorization) return;
     setCronLogsLoading(true);
     try {
-      const res = await fetch(`${ADMIN_CRON_AUDIT_LOGS_URL}?limit=200`, { headers });
+      const res = await fetch(`${ADMIN_CRON_AUDIT_LOGS_URL}?limit=${PAGE_SIZE}&offset=${offset}`, { headers });
       if (!res.ok) {
         if (res.status === 403) return checkAuth();
         throw new Error(await res.text());
       }
       const data = await res.json();
-      setCronLogs(data.logs || []);
+      const logs = data.logs || [];
+      if (offset === 0) setCronLogs(logs);
+      else setCronLogs((prev) => [...prev, ...logs]);
+      setCronHasMore(logs.length === PAGE_SIZE);
     } catch (e) {
       console.error(e);
     } finally {
@@ -419,84 +428,107 @@ export default function AdminPage() {
 
         {tabValue === 1 && (
           <Stack spacing={2}>
-            {participantsLoading ? (
-              <Box sx={{ p: 2 }}>Loading...</Box>
-            ) : (
-              <ParticipantTable
-                participants={participants}
-                onToggle={handleParticipantToggle}
-              />
-            )}
+            <Paper sx={{ overflow: "auto" }}>
+              <Typography variant="subtitle1" sx={{ p: 2 }}>
+                Participants
+              </Typography>
+              {participantsLoading ? (
+                <Box sx={{ p: 2 }}>Loading...</Box>
+              ) : (
+                <ParticipantTable
+                  participants={participants}
+                  onToggle={handleParticipantToggle}
+                />
+              )}
+            </Paper>
             <ExportWinnersButton onExport={() => {}} />
           </Stack>
         )}
 
         {tabValue === 2 && (
           <Paper sx={{ overflow: "auto" }}>
-            {auditLoading ? (
+            {auditLoading && auditLogs.length === 0 ? (
               <Box sx={{ p: 2 }}>Loading...</Box>
             ) : (
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Time</TableCell>
-                    <TableCell>Action</TableCell>
-                    <TableCell>Entity</TableCell>
-                    <TableCell>Metadata</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {auditLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{log.created_at ? new Date(log.created_at).toLocaleString() : "—"}</TableCell>
-                      <TableCell>{log.action}</TableCell>
-                      <TableCell>{log.entity_type} {log.entity_id ? `(${String(log.entity_id).slice(0, 8)}…)` : ""}</TableCell>
-                      <TableCell sx={{ maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {log.metadata ? JSON.stringify(log.metadata) : "—"}
-                      </TableCell>
+              <>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Time</TableCell>
+                      <TableCell>Action</TableCell>
+                      <TableCell>Entity</TableCell>
+                      <TableCell>Metadata</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {auditLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{log.created_at ? new Date(log.created_at).toLocaleString() : "—"}</TableCell>
+                        <TableCell>{log.action}</TableCell>
+                        <TableCell>{log.entity_type} {log.entity_id ? `(${String(log.entity_id).slice(0, 8)}…)` : ""}</TableCell>
+                        <TableCell sx={{ maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {log.metadata ? JSON.stringify(log.metadata) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {auditHasMore && (
+                  <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
+                    <Button variant="outlined" disabled={auditLoading} onClick={() => loadAuditLogs(auditLogs.length)}>
+                      {auditLoading ? "Loading…" : "Load more"}
+                    </Button>
+                  </Box>
+                )}
+              </>
             )}
           </Paper>
         )}
 
         {tabValue === 3 && (
           <Paper sx={{ overflow: "auto" }}>
-            {cronLogsLoading ? (
+            {cronLogsLoading && cronLogs.length === 0 ? (
               <Box sx={{ p: 2 }}>Loading...</Box>
             ) : (
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Created</TableCell>
-                    <TableCell>Run ID</TableCell>
-                    <TableCell>Job</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Metadata</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {cronLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>{log.created_at ? new Date(log.created_at).toLocaleString() : "—"}</TableCell>
-                      <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>{String(log.run_id).slice(0, 8)}…</TableCell>
-                      <TableCell>{log.job_name}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={log.status}
-                          size="small"
-                          color={log.status === "completed" ? "success" : log.status === "failed" ? "error" : "default"}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {log.metadata && Object.keys(log.metadata).length ? JSON.stringify(log.metadata) : "—"}
-                      </TableCell>
+              <>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Created</TableCell>
+                      <TableCell>Run ID</TableCell>
+                      <TableCell>Job</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Metadata</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {cronLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{log.created_at ? new Date(log.created_at).toLocaleString() : "—"}</TableCell>
+                        <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>{String(log.run_id).slice(0, 8)}…</TableCell>
+                        <TableCell>{log.job_name}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={log.status}
+                            size="small"
+                            color={log.status === "completed" ? "success" : log.status === "failed" ? "error" : "default"}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {log.metadata && Object.keys(log.metadata).length ? JSON.stringify(log.metadata) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {cronHasMore && (
+                  <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
+                    <Button variant="outlined" disabled={cronLogsLoading} onClick={() => loadCronLogs(cronLogs.length)}>
+                      {cronLogsLoading ? "Loading…" : "Load more"}
+                    </Button>
+                  </Box>
+                )}
+              </>
             )}
           </Paper>
         )}

@@ -1,16 +1,25 @@
 -- =============================================================================
 -- Schedule sync-strava-activities and process-activities (pg_cron + pg_net)
 -- Run once in Supabase SQL Editor after replacing placeholders below.
--- Requires: migration 14_enable_pg_net.sql applied (pg_net extension).
+--
+-- IF CRON DIDN'T RUN AUTOMATICALLY:
+-- 1. Ensure pg_net is enabled (run the line below, or apply migration 14_enable_pg_net).
+-- 2. Run this ENTIRE script in SQL Editor with PROJECT_REF and SERVICE_ROLE_KEY
+--    replaced (search for PROJECT_REF and SERVICE_ROLE_KEY in this file).
+-- 3. Verify:  select jobname, schedule from cron.job;
+--    You should see sync-strava (0 * * * *) and process-activities (15 * * * *).
 --
 -- Default: HOURLY (sync at :00, process at :15).
 -- To run ONCE PER DAY: change both cron expressions to '0 0 * * *' and
 -- '15 0 * * *' (midnight UTC and 00:15 UTC).
 --
--- Where to get values: Use existing Supabase env/secrets.
---   PROJECT_REF = from SUPABASE_URL (e.g. https://abcdefgh.supabase.co -> abcdefgh).
---   SERVICE_ROLE_KEY = SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY from Project Settings -> API.
+-- Where to get values:
+--   PROJECT_REF = from your Supabase URL (e.g. https://tqzxzdbpavboydgewqlz.supabase.co -> tqzxzdbpavboydgewqlz).
+--   SERVICE_ROLE_KEY = Project Settings -> API -> service_role (secret).
 -- =============================================================================
+
+-- Ensure pg_net is available (required for net.http_post)
+create extension if not exists pg_net;
 
 -- Unschedule existing jobs by name (idempotent)
 do $$

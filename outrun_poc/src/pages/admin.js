@@ -24,10 +24,12 @@ import {
 import AppHeader from "../components/common/AppHeader";
 import { supabase } from "../services/supabaseClient";
 import { getAdminUser } from "../utils/adminAuth";
+import { setParticipantExcluded } from "../services/adminService";
 import ParticipantTable from "../components/admin/ParticipantTable";
 import ExportWinnersButton from "../components/admin/ExportWinnersButton";
 
 const ADMIN_CHALLENGES_URL = "/api/admin/challenges";
+const ADMIN_PARTICIPANTS_URL = "/api/admin/participants";
 const ADMIN_AUDIT_LOGS_URL = "/api/admin/audit-logs";
 const ADMIN_CRON_AUDIT_LOGS_URL = "/api/admin/cron-audit-logs";
 
@@ -60,6 +62,7 @@ export default function AdminPage() {
   const [cronLogs, setCronLogs] = useState([]);
   const [cronLogsLoading, setCronLogsLoading] = useState(false);
   const [participants, setParticipants] = useState([]);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
 
   const checkAuth = useCallback(async () => {
     const { user, isAdmin } = await getAdminUser(supabase);
@@ -140,15 +143,38 @@ export default function AdminPage() {
     }
   }, [checkAuth]);
 
+  const loadParticipants = useCallback(async () => {
+    const headers = await getAuthHeaders();
+    if (!headers.Authorization) return;
+    setParticipantsLoading(true);
+    try {
+      const res = await fetch(ADMIN_PARTICIPANTS_URL, { headers });
+      if (!res.ok) {
+        if (res.status === 403) return checkAuth();
+        throw new Error(await res.text());
+      }
+      const data = await res.json();
+      setParticipants(data.rows || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setParticipantsLoading(false);
+    }
+  }, [checkAuth]);
+
   useEffect(() => {
     if (authState !== "admin") return;
     loadChallenges();
-    if (tabValue === 1) loadAuditLogs();
+    if (tabValue === 1) loadParticipants();
+    if (tabValue === 2) loadAuditLogs();
     if (tabValue === 3) loadCronLogs();
-  }, [authState, loadChallenges, tabValue]);
+  }, [authState, loadChallenges, loadParticipants, loadAuditLogs, loadCronLogs, tabValue]);
 
   useEffect(() => {
-    if (authState === "admin" && tabValue === 1) loadAuditLogs();
+    if (authState === "admin" && tabValue === 1) loadParticipants();
+  }, [authState, tabValue, loadParticipants]);
+  useEffect(() => {
+    if (authState === "admin" && tabValue === 2) loadAuditLogs();
   }, [authState, tabValue, loadAuditLogs]);
   useEffect(() => {
     if (authState === "admin" && tabValue === 3) loadCronLogs();
@@ -224,6 +250,17 @@ export default function AdminPage() {
     }
   };
 
+  const handleParticipantToggle = async (row) => {
+    const { user } = await getAdminUser(supabase);
+    if (!user?.id || row.participant_id == null) return;
+    try {
+      await setParticipantExcluded(user.id, row.participant_id, !row.excluded);
+      loadParticipants();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   if (authState === "loading") {
     return (
       <>
@@ -274,9 +311,9 @@ export default function AdminPage() {
         </Typography>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ mb: 2 }}>
           <Tab label="Challenges" />
-          <Tab label="Audit logs" />
           <Tab label="Participants" />
-          <Tab label="Cron logs" />
+          <Tab label="Audit Logs" />
+          <Tab label="Cron Logs" />
         </Tabs>
 
         {tabValue === 0 && (
@@ -381,6 +418,20 @@ export default function AdminPage() {
         )}
 
         {tabValue === 1 && (
+          <Stack spacing={2}>
+            {participantsLoading ? (
+              <Box sx={{ p: 2 }}>Loading...</Box>
+            ) : (
+              <ParticipantTable
+                participants={participants}
+                onToggle={handleParticipantToggle}
+              />
+            )}
+            <ExportWinnersButton onExport={() => {}} />
+          </Stack>
+        )}
+
+        {tabValue === 2 && (
           <Paper sx={{ overflow: "auto" }}>
             {auditLoading ? (
               <Box sx={{ p: 2 }}>Loading...</Box>
@@ -409,13 +460,6 @@ export default function AdminPage() {
               </Table>
             )}
           </Paper>
-        )}
-
-        {tabValue === 2 && (
-          <Stack spacing={2}>
-            <ParticipantTable participants={participants} onToggle={() => {}} />
-            <ExportWinnersButton onExport={() => {}} />
-          </Stack>
         )}
 
         {tabValue === 3 && (

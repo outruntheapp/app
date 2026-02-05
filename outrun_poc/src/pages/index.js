@@ -14,6 +14,7 @@ import { isDemoMode, disableDemoMode } from "../utils/demoMode";
 import { checkStravaConnectionByEmail, clearStoredEmail } from "../services/authService";
 import name from "../assets/name.png";
 import logo from "../assets/logo.png";
+import { OUTRUN_WHITE } from "../styles/theme";
 
 export default function LandingPage() {
   const [challenge, setChallenge] = useState(null);
@@ -249,7 +250,7 @@ export default function LandingPage() {
                   Rules
                 </Button>
 
-                <Typography variant="caption" display="block" color="text.secondary" sx={{ textAlign: "center" }}>
+                <Typography variant="caption" display="block" sx={{ textAlign: "center", color: OUTRUN_WHITE }}>
                   Event is ticketed via{" "}
                   <a href="https://www.entryninja.com/events/83346-outrun-virtual-run" target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>
                     Entry Ninja
@@ -271,7 +272,7 @@ export default function LandingPage() {
                   onChange={handleEmailChange}
                   onKeyPress={handleEmailKeyPress}
                   error={!!emailError}
-                  helperText={emailError || "Enter the email you use for Strava"}
+                  helperText={emailError ? emailError : <span style={{ color: OUTRUN_WHITE }}>Enter the email you use for Strava</span>}
                   fullWidth
                   disabled={checkingStrava}
                   autoFocus

@@ -6,7 +6,7 @@ These files are **standalone versions** of the edge functions with all shared co
 
 When deploying via Supabase Dashboard (web UI), the `_shared/` directory structure is not automatically recognized. The imports like `from "../_shared/supabase.ts"` will fail.
 
-These standalone files include all shared code inline, making them ready to copy-paste directly into the Supabase Dashboard.
+These standalone files include all shared code inline (including ticket validation for participant gating), making them ready to copy-paste directly into the Supabase Dashboard. They do **not** depend on `_shared/`.
 
 ## How to Deploy
 
@@ -22,6 +22,7 @@ These standalone files include all shared code inline, making them ready to copy
 ### Files Available:
 
 - `auth-strava-callback.ts` → Function name: `auth-strava-callback`
+- `auth-return-signin.ts` → Function name: `auth-return-signin`
 - `sync-strava-activities.ts` → Function name: `sync-strava-activities`
 - `process-activities.ts` → Function name: `process-activities`
 - `admin-exclude-user.ts` → Function name: `admin-exclude-user`

@@ -48,6 +48,26 @@ async function writeAuditLog({
   }
 }
 
+/** Ticket gate: admins bypass; else must exist in challenge_ticket_holders for (challengeId, email). */
+async function hasValidTicketForChallenge(
+  challengeId: string,
+  userEmail: string | null | undefined,
+  userRole: string | null | undefined
+): Promise<boolean> {
+  if (userRole === "admin") return true;
+  const email = typeof userEmail === "string" ? userEmail.trim().toLowerCase() : "";
+  if (!email) return false;
+  const { data, error } = await supabaseAdmin
+    .from("challenge_ticket_holders")
+    .select("id")
+    .eq("challenge_id", challengeId)
+    .eq("email", email)
+    .limit(1)
+    .maybeSingle();
+  if (error) return false;
+  return !!data;
+}
+
 // ============================================================================
 // Main Function
 // ============================================================================
@@ -275,7 +295,8 @@ serve(async (req) => {
       onConflict: "user_id",
     });
 
-    // Get active challenge and ensure participant record exists
+    // Get active challenge and ensure participant record exists (gated by ticket)
+    let ticketRequired = false;
     const { data: activeChallenge } = await supabaseAdmin
       .from("challenges")
       .select("id")
@@ -291,29 +312,43 @@ serve(async (req) => {
         .single();
 
       if (!existingParticipant) {
-        const { error: participantInsertError } = await supabaseAdmin
-          .from("participants")
-          .insert({
-            user_id: userId,
-            challenge_id: activeChallenge.id,
-            excluded: false,
-          });
-        if (participantInsertError) {
-          logError("Failed to create participant record during Strava auth", {
-            userId,
-            challengeId: activeChallenge.id,
-            error: participantInsertError.message,
-            code: participantInsertError.code,
-          });
+        const { data: userRow } = await supabaseAdmin
+          .from("users")
+          .select("email, role")
+          .eq("id", userId)
+          .maybeSingle();
+        const allowed = await hasValidTicketForChallenge(
+          activeChallenge.id,
+          userRow?.email ?? null,
+          userRow?.role ?? null
+        );
+        if (allowed) {
+          const { error: participantInsertError } = await supabaseAdmin
+            .from("participants")
+            .insert({
+              user_id: userId,
+              challenge_id: activeChallenge.id,
+              excluded: false,
+            });
+          if (participantInsertError) {
+            logError("Failed to create participant record during Strava auth", {
+              userId,
+              challengeId: activeChallenge.id,
+              error: participantInsertError.message,
+              code: participantInsertError.code,
+            });
+          } else {
+            logInfo("Created participant record during Strava auth", { userId });
+            await writeAuditLog({
+              actorId: userId,
+              action: "participant.created",
+              entityType: "participant",
+              metadata: { challenge_id: activeChallenge.id },
+            });
+          }
         } else {
-          logInfo("Created participant record during Strava auth", { userId });
-          // Log participant creation
-          await writeAuditLog({
-            actorId: userId,
-            action: "participant.created",
-            entityType: "participant",
-            metadata: { challenge_id: activeChallenge.id },
-          });
+          ticketRequired = true;
+          logInfo("Skipped participant creation: no valid ticket", { userId, challengeId: activeChallenge.id });
         }
       }
     }
@@ -346,6 +381,7 @@ serve(async (req) => {
         success: true,
         userId,
         ...(tokenHash ? { token_hash: tokenHash, type: "magiclink" } : {}),
+        ...(ticketRequired ? { ticket_required: true } : {}),
       }),
       {
         headers: {

@@ -17,6 +17,26 @@ function logError(message: string, error: unknown) {
   console.error(JSON.stringify({ level: "error", message, error }));
 }
 
+/** Ticket gate: admins bypass; else must exist in challenge_ticket_holders for (challengeId, email). */
+async function hasValidTicketForChallenge(
+  challengeId: string,
+  userEmail: string | null | undefined,
+  userRole: string | null | undefined
+): Promise<boolean> {
+  if (userRole === "admin") return true;
+  const email = typeof userEmail === "string" ? userEmail.trim().toLowerCase() : "";
+  if (!email) return false;
+  const { data, error } = await supabaseAdmin
+    .from("challenge_ticket_holders")
+    .select("id")
+    .eq("challenge_id", challengeId)
+    .eq("email", email)
+    .limit(1)
+    .maybeSingle();
+  if (error) return false;
+  return !!data;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -55,7 +75,7 @@ serve(async (req) => {
 
     const { data: userRow, error: selectError } = await supabaseAdmin
       .from("users")
-      .select("id, strava_athlete_id")
+      .select("id, strava_athlete_id, role")
       .eq("email", trimmedEmail)
       .not("strava_athlete_id", "is", null)
       .maybeSingle();
@@ -75,7 +95,7 @@ serve(async (req) => {
       );
     }
 
-    // Ensure participant for current active challenge (so return sign-in adds user to new challenge)
+    // Ensure participant for current active challenge (gated by ticket; admins bypass)
     const { data: activeChallenge } = await supabaseAdmin
       .from("challenges")
       .select("id")
@@ -89,21 +109,30 @@ serve(async (req) => {
         .eq("challenge_id", activeChallenge.id)
         .maybeSingle();
       if (!existingParticipant) {
-        const { error: participantInsertError } = await supabaseAdmin
-          .from("participants")
-          .insert({
-            user_id: userRow.id,
-            challenge_id: activeChallenge.id,
-            excluded: false,
-          });
-        if (participantInsertError) {
-          logError("Return sign-in: participant insert failed (non-blocking)", {
-            userId: userRow.id,
-            challengeId: activeChallenge.id,
-            error: participantInsertError.message,
-          });
+        const allowed = await hasValidTicketForChallenge(
+          activeChallenge.id,
+          trimmedEmail,
+          userRow?.role ?? null
+        );
+        if (allowed) {
+          const { error: participantInsertError } = await supabaseAdmin
+            .from("participants")
+            .insert({
+              user_id: userRow.id,
+              challenge_id: activeChallenge.id,
+              excluded: false,
+            });
+          if (participantInsertError) {
+            logError("Return sign-in: participant insert failed (non-blocking)", {
+              userId: userRow.id,
+              challengeId: activeChallenge.id,
+              error: participantInsertError.message,
+            });
+          } else {
+            logInfo("Return sign-in: created participant for active challenge", { userId: userRow.id });
+          }
         } else {
-          logInfo("Return sign-in: created participant for active challenge", { userId: userRow.id });
+          logInfo("Return sign-in: skipped participant (no valid ticket)", { userId: userRow.id });
         }
       }
     }

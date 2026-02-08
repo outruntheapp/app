@@ -3,10 +3,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { AppBar, Toolbar, Box, Button, Menu, MenuItem, IconButton, useMediaQuery, useTheme } from "@mui/material";
+import { AppBar, Toolbar, Box, Menu, MenuItem, IconButton } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import Image from "next/image";
-import Link from "next/link";
 import name from "../../assets/name.png";
 import logo from "../../assets/logo.png";
 import RulesDialog from "./RulesDialog";
@@ -18,9 +17,7 @@ import { getAdminUser } from "../../utils/adminAuth";
 
 export default function AppHeader({ show = true, hideNav = false }) {
   const router = useRouter();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
+  const [menuAnchor, setMenuAnchor] = useState(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [challenge, setChallenge] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -58,26 +55,26 @@ export default function AppHeader({ show = true, hideNav = false }) {
     { label: "Leaderboard", path: "/leaderboard" },
   ];
 
-  const handleMobileMenuOpen = (event) => {
-    setMobileMenuAnchor(event.currentTarget);
+  const handleMenuOpen = (event) => {
+    setMenuAnchor(event.currentTarget);
   };
 
-  const handleMobileMenuClose = () => {
-    setMobileMenuAnchor(null);
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
   };
 
   const handleNavClick = (path) => {
-    handleMobileMenuClose();
+    handleMenuClose();
     router.push(path);
   };
 
   const handleRulesClick = () => {
-    handleMobileMenuClose();
+    handleMenuClose();
     setRulesOpen(true);
   };
 
   const handleLogout = async () => {
-    handleMobileMenuClose();
+    handleMenuClose();
     try {
       await supabase.auth.signOut({ scope: "local" });
       if (typeof window !== "undefined" && isDemoMode()) {
@@ -116,25 +113,6 @@ export default function AppHeader({ show = true, hideNav = false }) {
           px: { xs: 2, sm: 3 },
         }}
       >
-        {/* Admin - Far left, only for users with role === admin */}
-        {!hideNav && !isLandingPage && isAdmin && (
-          <Box sx={{ mr: 1, zIndex: 1 }}>
-            <Button
-              component={Link}
-              href="/admin"
-              color="inherit"
-              size="small"
-              sx={{
-                color: "white",
-                textTransform: "none",
-                "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
-              }}
-            >
-              ADMIN
-            </Button>
-          </Box>
-        )}
-
         {/* Name and Logo - Centered, stacked vertically */}
         <Box
           sx={{
@@ -175,96 +153,39 @@ export default function AppHeader({ show = true, hideNav = false }) {
           />
         </Box>
 
-        {/* Navigation Links - Right Side */}
+        {/* Hamburger menu - all screen sizes */}
         {!hideNav && !isLandingPage && (
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              ml: "auto",
-              zIndex: 1,
-            }}
-          >
-            {isMobile ? (
-              <>
-                <IconButton
-                  color="inherit"
-                  onClick={handleMobileMenuOpen}
-                  sx={{ color: "white" }}
+          <Box sx={{ ml: "auto", zIndex: 1 }}>
+            <IconButton
+              color="inherit"
+              onClick={handleMenuOpen}
+              sx={{ color: "white" }}
+              aria-label="Open menu"
+            >
+              <MenuIcon />
+            </IconButton>
+            <Menu
+              anchorEl={menuAnchor}
+              open={Boolean(menuAnchor)}
+              onClose={handleMenuClose}
+            >
+              {isAdmin && (
+                <MenuItem onClick={() => handleNavClick("/admin")} selected={router.pathname === "/admin"}>
+                  Admin
+                </MenuItem>
+              )}
+              {navLinks.map((link) => (
+                <MenuItem
+                  key={link.path}
+                  onClick={() => handleNavClick(link.path)}
+                  selected={router.pathname === link.path}
                 >
-                  <MenuIcon />
-                </IconButton>
-                <Menu
-                  anchorEl={mobileMenuAnchor}
-                  open={Boolean(mobileMenuAnchor)}
-                  onClose={handleMobileMenuClose}
-                >
-                  {isAdmin && (
-                    <MenuItem onClick={() => handleNavClick("/admin")} selected={router.pathname === "/admin"}>
-                      Admin
-                    </MenuItem>
-                  )}
-                  {navLinks.map((link) => (
-                    <MenuItem
-                      key={link.path}
-                      onClick={() => handleNavClick(link.path)}
-                      selected={router.pathname === link.path}
-                    >
-                      {link.label}
-                    </MenuItem>
-                  ))}
-                  <MenuItem onClick={handleRulesClick}>Rules</MenuItem>
-                  <MenuItem onClick={handleLogout}>Logout</MenuItem>
-                </Menu>
-              </>
-            ) : (
-              <>
-                {navLinks.map((link) => (
-                  <Button
-                    key={link.path}
-                    component={Link}
-                    href={link.path}
-                    color="inherit"
-                    sx={{
-                      color: "white",
-                      textTransform: "none",
-                      "&:hover": {
-                        backgroundColor: "rgba(255, 255, 255, 0.1)",
-                      },
-                    }}
-                  >
-                    {link.label}
-                  </Button>
-                ))}
-                <Button
-                  color="inherit"
-                  onClick={handleRulesClick}
-                  sx={{
-                    color: "white",
-                    textTransform: "none",
-                    "&:hover": {
-                      backgroundColor: "rgba(255, 255, 255, 0.1)",
-                    },
-                  }}
-                >
-                  Rules
-                </Button>
-                <Button
-                  color="inherit"
-                  onClick={handleLogout}
-                  sx={{
-                    color: "white",
-                    textTransform: "none",
-                    "&:hover": {
-                      backgroundColor: "rgba(255, 255, 255, 0.1)",
-                    },
-                  }}
-                >
-                  Logout
-                </Button>
-              </>
-            )}
+                  {link.label}
+                </MenuItem>
+              ))}
+              <MenuItem onClick={handleRulesClick}>Rules</MenuItem>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            </Menu>
           </Box>
         )}
       </Toolbar>

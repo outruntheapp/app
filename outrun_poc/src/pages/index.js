@@ -380,12 +380,24 @@ export default function LandingPage() {
                     </Button>
                   </Stack>
                 </form>
-                <Button variant="text" fullWidth size="small" onClick={() => { setView("forgot"); setForgotEmail(signInEmail); }}>
-                  Forgot password?
-                </Button>
-                <Button variant="text" fullWidth size="small" onClick={() => { setView("signup"); setSignInError(""); }}>
-                  Create account (Sign up)
-                </Button>
+                <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
+                  <Button
+                    variant="text"
+                    size="small"
+                    sx={{ flex: 1, fontSize: "0.8rem", minWidth: 0 }}
+                    onClick={() => { setView("forgot"); setForgotEmail(signInEmail); }}
+                  >
+                    Forgot password?
+                  </Button>
+                  <Button
+                    variant="text"
+                    size="small"
+                    sx={{ flex: 1, fontSize: "0.8rem", minWidth: 0 }}
+                    onClick={() => { setView("signup"); setSignInError(""); }}
+                  >
+                    Create account
+                  </Button>
+                </Box>
                 <Button variant="outlined" fullWidth onClick={() => setRulesOpen(true)} sx={{ mt: 1 }}>
                   Rules
                 </Button>

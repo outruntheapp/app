@@ -27,6 +27,7 @@ These standalone files include all shared code inline (including ticket validati
 - `process-activities.ts` → Function name: `process-activities`
 - `admin-exclude-user.ts` → Function name: `admin-exclude-user`
 - `refresh-leaderboards.ts` → Function name: `refresh-leaderboards`
+- `sync-auth-email.ts` → Function name: `sync-auth-email` (one-off: sync auth email from public.users)
 
 ## Alternative: Use Supabase CLI
 

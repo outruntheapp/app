@@ -119,3 +119,5 @@ Same env as other scripts: `NEXT_PUBLIC_SUPABASE_URL` (or `SUPABASE_URL`) and `S
 ```bash
 node scripts/sync-auth-email-from-public-users.js
 ```
+
+**Alternative: run inside Supabase** — Deploy the Edge Function `sync-auth-email` and invoke it once (e.g. from Supabase Dashboard → Edge Functions → sync-auth-email → Invoke, or via curl with `Authorization: Bearer <SERVICE_ROLE_KEY>`). Same logic, no local env needed.

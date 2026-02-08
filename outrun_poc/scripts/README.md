@@ -94,3 +94,18 @@ node scripts/ingest-strava-activity.js path/to/activity.json
 ```
 
 Requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (or `NEXT_PUBLIC_*` / `SERVICE_ROLE_KEY`). JSON must include `user_id`, `polyline`, `started_at`, `elapsed_seconds`.
+
+## set-existing-users-password.js — One-off: set password for existing users
+
+Sets the auth password to `0000` for every user that has a row in `public.users`. Run once after enabling email/password sign-in so existing users can sign in with email + password `0000` (they should change it via “Forgot password” if needed).
+
+```bash
+# With env vars set (e.g. from .env.local)
+export NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+node scripts/set-existing-users-password.js
+```
+
+Or with dotenv: `node -r dotenv/config scripts/set-existing-users-password.js` (with `dotenv` installed and `.env.local` in project root).
+
+**Security:** Use only in a controlled environment; the script uses the **service role** key. Do not commit the key or run in public CI.

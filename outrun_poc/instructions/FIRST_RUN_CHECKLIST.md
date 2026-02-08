@@ -168,6 +168,8 @@ Scopes:
 read,activity:read
 ```
 
+**Password reset (email/password auth):** In Supabase Dashboard → Authentication → URL Configuration, set **Redirect URLs** to include your app’s callback (e.g. `https://your-app-domain.com/auth/callback` and `http://localhost:3000/auth/callback` for local dev) so “Forgot password” recovery links work.
+
 ---
 
 ### D2. First OAuth connection

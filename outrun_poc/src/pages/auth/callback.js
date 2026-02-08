@@ -1,100 +1,156 @@
 // src/pages/auth/callback.js
-// Purpose: Handle Strava OAuth redirect and finalize login
+// Handles: (1) Strava OAuth redirect, (2) Password recovery redirect (set new password)
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { Container, Stack, TextField, Button, Typography, Alert } from "@mui/material";
 import { supabase } from "../../services/supabaseClient";
 import { clearStoredEmail } from "../../services/authService";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [recoveryError, setRecoveryError] = useState("");
+  const [recoverySuccess, setRecoverySuccess] = useState(false);
 
   useEffect(() => {
-    const finalizeAuth = async () => {
-      const code = router.query.code;
-      if (!code) {
-        router.replace("/");
-        return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setRecoveryMode(true);
       }
+    });
+    return () => subscription?.unsubscribe();
+  }, []);
 
-      try {
-        // Clear stored email so we never send a stale email with this code (avoids user 1/2 data leak)
-        clearStoredEmail();
-
-        // Check if this is a demo OAuth (code starts with "demo_code_")
-        const isDemo = typeof code === "string" && code.startsWith("demo_code_");
-
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/auth-strava-callback`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-              ...(isDemo ? { "x-demo-mode": "true" } : {}), // Signal demo mode
-            },
-            body: JSON.stringify({
-              code,
-              userEmail: null,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          // Suppress CORS errors from Strava analytics (third-party calls)
-          if (errorText.includes("Access-Control-Allow-Origin") && errorText.includes("strava.com")) {
-            // This is a third-party analytics CORS error, ignore it
-            console.warn("Suppressed Strava analytics CORS error");
-          } else {
-            throw new Error("Auth callback failed");
-          }
-        }
-
-        const data = await response.json();
-
-        if (data.success && data.userId) {
-          clearStoredEmail();
-
-          // Establish session so getSession/getUser work on dashboard (name, admin, etc.)
-          if (data.token_hash && data.type) {
-            const { error: verifyError } = await supabase.auth.verifyOtp({
-              token_hash: data.token_hash,
-              type: data.type,
-            });
-            if (verifyError) {
-              console.warn("Session verify failed (continuing to dashboard):", verifyError.message);
-            }
-          }
-          router.replace("/dashboard");
-        } else {
-          throw new Error("Auth callback did not return success");
-        }
-      } catch (err) {
-        // Suppress CORS errors from Strava analytics
-        const errorMessage = err.message || String(err);
-        if (errorMessage.includes("Access-Control-Allow-Origin") && 
-            (errorMessage.includes("strava.com") || errorMessage.includes("google-analytics"))) {
-          // This is a third-party analytics CORS error, ignore it
-          console.warn("Suppressed third-party analytics CORS error");
-          // Still proceed with redirect if we have a code
-          if (router.query.code) {
-            router.replace("/dashboard");
-            return;
-          }
-        }
-        
-        console.error("Auth callback failed", err);
-        // Clear stored email on error
-        clearStoredEmail();
-        router.replace("/?error=auth_failed");
-      }
-    };
-
-    if (router.isReady) {
-      finalizeAuth();
+  const handleSetNewPassword = async (e) => {
+    e?.preventDefault();
+    setRecoveryError("");
+    if (newPassword.length < 6) {
+      setRecoveryError("Password must be at least 6 characters");
+      return;
     }
-  }, [router]);
+    if (newPassword !== confirmPassword) {
+      setRecoveryError("Passwords do not match");
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setRecoveryError(error.message || "Failed to update password");
+      return;
+    }
+    setRecoverySuccess(true);
+    setTimeout(() => router.replace("/dashboard"), 1500);
+  };
 
-  return null;
+  useEffect(() => {
+    if (!router.isReady) return;
+    const code = router.query.code;
+    if (code) {
+      finalizeStravaAuth();
+    }
+  }, [router.isReady, router.query.code]);
+
+  async function finalizeStravaAuth() {
+    const code = router.query.code;
+    if (!code) return;
+
+    try {
+      clearStoredEmail();
+      const isDemo = typeof code === "string" && code.startsWith("demo_code_");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/auth-strava-callback`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            ...(isDemo ? { "x-demo-mode": "true" } : {}),
+          },
+          body: JSON.stringify({ code, userEmail: null }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        if (errorText.includes("Access-Control-Allow-Origin") && errorText.includes("strava.com")) {
+          console.warn("Suppressed Strava analytics CORS error");
+        } else {
+          throw new Error("Auth callback failed");
+        }
+      }
+
+      const data = await response.json();
+      if (data.success && data.userId) {
+        clearStoredEmail();
+        if (data.token_hash && data.type) {
+          await supabase.auth.verifyOtp({ token_hash: data.token_hash, type: data.type });
+        }
+        router.replace("/dashboard");
+      } else {
+        throw new Error("Auth callback did not return success");
+      }
+    } catch (err) {
+      console.error("Auth callback failed", err);
+      clearStoredEmail();
+      router.replace("/?error=auth_failed");
+    }
+  }
+
+  if (recoveryMode) {
+    return (
+      <Container maxWidth="xs" sx={{ py: 6 }}>
+        <Stack spacing={2}>
+          <Typography variant="h6">Set new password</Typography>
+          {recoverySuccess ? (
+            <Alert severity="success">Password updated. Redirecting…</Alert>
+          ) : (
+            <form onSubmit={handleSetNewPassword}>
+              <Stack spacing={2}>
+                <TextField
+                  label="New password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  fullWidth
+                  size="small"
+                  required
+                  autoComplete="new-password"
+                />
+                <TextField
+                  label="Confirm password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  fullWidth
+                  size="small"
+                  required
+                />
+                {recoveryError && <Alert severity="error">{recoveryError}</Alert>}
+                <Button type="submit" variant="contained" fullWidth>
+                  Update password
+                </Button>
+              </Stack>
+            </form>
+          )}
+        </Stack>
+      </Container>
+    );
+  }
+
+  if (router.query.code) {
+    return <Typography sx={{ p: 4, textAlign: "center" }}>Signing you in…</Typography>;
+  }
+
+  // No code: might be password recovery (hash); wait briefly for onAuthStateChange(PASSWORD_RECOVERY)
+  useEffect(() => {
+    if (!router.isReady || router.query.code) return;
+    const t = setTimeout(() => {
+      if (!recoveryMode) router.replace("/");
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [router.isReady, router.query.code, recoveryMode]);
+
+  return <Typography sx={{ p: 4, textAlign: "center" }}>Loading…</Typography>;
 }

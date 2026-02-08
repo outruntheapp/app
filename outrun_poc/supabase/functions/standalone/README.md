@@ -28,6 +28,7 @@ These standalone files include all shared code inline (including ticket validati
 - `admin-exclude-user.ts` → Function name: `admin-exclude-user`
 - `refresh-leaderboards.ts` → Function name: `refresh-leaderboards`
 - `sync-auth-email.ts` → Function name: `sync-auth-email` (one-off: sync auth email from public.users)
+- `set-existing-users-password.ts` → Function name: `set-existing-users-password` (one-off: set all users' password to 000000)
 
 ## Alternative: Use Supabase CLI
 

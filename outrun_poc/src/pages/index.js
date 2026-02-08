@@ -2,6 +2,7 @@
 // Purpose: Landing — Sign in (email + password), Sign up (ID + email + password → Strava), Forgot password
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { Container, Stack, Typography, Button, Alert, Box, Chip, TextField } from "@mui/material";
 import Image from "next/image";
 import CountdownTimer from "../components/common/CountdownTimer";
@@ -18,6 +19,7 @@ import { OUTRUN_WHITE } from "../styles/theme";
 const ENTRY_NINJA_URL = "https://www.entryninja.com/events/83346-outrun-virtual-run";
 
 export default function LandingPage() {
+  const router = useRouter();
   const [challenge, setChallenge] = useState(null);
   const [isParticipant, setIsParticipant] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -262,10 +264,10 @@ export default function LandingPage() {
                 <Button
                   variant={challenge && !isParticipant ? "contained" : "outlined"}
                   fullWidth
-                  onClick={handleJoinChallenge}
+                  onClick={challenge && !isParticipant ? handleJoinChallenge : () => router.push("/dashboard")}
                   disabled={joiningChallenge}
                 >
-                  {joiningChallenge ? "Joining…" : challenge && !isParticipant ? `Join ${challenge.name}` : "Dashboard"}
+                  {joiningChallenge ? "Joining…" : challenge && !isParticipant ? `Join ${challenge.name}` : "Enter"}
                 </Button>
                 <Button variant="outlined" fullWidth onClick={() => setRulesOpen(true)}>
                   Rules

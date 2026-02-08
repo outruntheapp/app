@@ -109,3 +109,13 @@ node scripts/set-existing-users-password.js
 Or with dotenv: `node -r dotenv/config scripts/set-existing-users-password.js` (with `dotenv` installed and `.env.local` in project root).
 
 **Security:** Use only in a controlled environment; the script uses the **service role** key. Do not commit the key or run in public CI.
+
+## sync-auth-email-from-public-users.js — One-off: sync auth email from public.users
+
+Sets `auth.users.email` to `public.users.email` for every user that has a real email in `public.users` (skips placeholder emails like `*@strava.local`). Run once so that “Forgot password” and email/password sign-in work for users who were created via Strava OAuth (auth had a placeholder email).
+
+Same env as other scripts: `NEXT_PUBLIC_SUPABASE_URL` (or `SUPABASE_URL`) and `SUPABASE_SERVICE_ROLE_KEY` (or `SERVICE_ROLE_KEY`).
+
+```bash
+node scripts/sync-auth-email-from-public-users.js
+```

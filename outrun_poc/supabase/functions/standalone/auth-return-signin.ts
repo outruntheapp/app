@@ -137,10 +137,17 @@ serve(async (req) => {
       }
     }
 
-    const authEmail = `strava_${userRow.strava_athlete_id}@strava.local`;
+    // Sync auth.users.email to real email so recovery & email sign-in work; then generate link for that email
+    const { error: syncErr } = await supabaseAdmin.auth.admin.updateUserById(userRow.id, {
+      email: trimmedEmail,
+      email_confirm: true,
+    });
+    if (syncErr) {
+      logError("Return sign-in: sync auth email failed (non-blocking)", syncErr);
+    }
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
-      email: authEmail,
+      email: trimmedEmail,
     });
 
     if (linkError) {

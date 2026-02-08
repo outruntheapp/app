@@ -130,9 +130,16 @@ serve(async (req) => {
             emailOwnerId: emailUser.id,
           });
         } else if (!existingUser.email || existingUser.email === trimmedEmail) {
-          // Safe to set/update email
+          // Safe to set/update email in public.users and in auth (so recovery & email sign-in work)
           updateData.email = trimmedEmail;
           logInfo("Updating user email", { userId, email: trimmedEmail });
+          const { error: authEmailErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            email: trimmedEmail,
+            email_confirm: true,
+          });
+          if (authEmailErr) {
+            logError("Failed to sync auth email (non-blocking)", { userId, error: authEmailErr.message });
+          }
         } else {
           logInfo("User already has different email, preserving existing email", {
             userId,
@@ -191,9 +198,16 @@ serve(async (req) => {
           .single();
         
         if (!emailUser) {
-          // Email is available, safe to use
+          // Email is available, safe to use in public.users and in auth (so recovery & email sign-in work)
           userData.email = trimmedEmail;
           logInfo("Setting user email on creation", { userId, email: trimmedEmail });
+          const { error: authEmailErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            email: trimmedEmail,
+            email_confirm: true,
+          });
+          if (authEmailErr) {
+            logError("Failed to set auth email on new user (non-blocking)", { userId, error: authEmailErr.message });
+          }
         } else {
           logInfo("Email already taken, creating user without email", {
             userId,
@@ -285,11 +299,20 @@ serve(async (req) => {
 
     logInfo("Strava OAuth callback completed", { userId });
 
-    // Generate magic-link token so client can establish session via verifyOtp
-    const authEmail = `strava_${athlete.id}@strava.local`;
+    // Generate magic-link token so client can establish session via verifyOtp.
+    // Use real email if we synced it to auth; else placeholder so link targets correct user.
+    const { data: userRowForLink } = await supabaseAdmin
+      .from("users")
+      .select("email")
+      .eq("id", userId)
+      .maybeSingle();
+    const linkEmail =
+      userRowForLink?.email && !userRowForLink.email.endsWith("@strava.local")
+        ? userRowForLink.email.trim().toLowerCase()
+        : `strava_${athlete.id}@strava.local`;
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
-      email: authEmail,
+      email: linkEmail,
     });
     if (linkError) {
       logError("Failed to generate session link (non-blocking)", linkError);

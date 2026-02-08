@@ -100,12 +100,9 @@ export default function RoutesPage() {
           }}
         >
           <Paper sx={{ p: 2, mb: 2, flexShrink: 0 }}>
-            <Typography variant="h5" gutterBottom>
-              Challenge Routes
-            </Typography>
             {challenge && (
-              <Typography variant="body1" color="text.primary">
-                {challenge.name}
+              <Typography variant="h5" gutterBottom>
+                {challenge.name} Routes
               </Typography>
             )}
           </Paper>

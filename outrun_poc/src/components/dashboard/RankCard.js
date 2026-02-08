@@ -75,19 +75,11 @@ export default function RankCard() {
           {getRankDisplay()}
         </Typography>
         {rank && (
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+          <Typography variant="caption" color="background.default" sx={{ fontSize: "0.7rem" }}>
             {getRankSuffix(rank)} place
           </Typography>
         )}
       </Box>
-      {totalParticipants > 0 && (
-        <Chip
-          label={`Out of ${totalParticipants} ${totalParticipants === 1 ? "participant" : "participants"}`}
-          size="small"
-          variant="outlined"
-          sx={{ fontSize: "0.7rem", height: "22px" }}
-        />
-      )}
       {rank === null && (
         <Typography variant="caption" color="text.primary" sx={{ fontSize: "0.7rem", display: "block", mt: 0.5 }}>
           Complete stages to appear on the leaderboard

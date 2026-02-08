@@ -61,62 +61,65 @@ export default function RunnerSummaryCard() {
 
   return (
     <Paper sx={{ p: 1.5 }}>
-      <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
-        <Avatar
-          sx={{
-            width: 40,
-            height: 40,
-            bgcolor: "primary.main",
-            color: "primary.contrastText",
-            mr: 1.5,
-            fontWeight: 700,
-            fontSize: "0.875rem",
-          }}
-        >
-          {initials}
-        </Avatar>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="subtitle1" sx={{ fontSize: "0.95rem", fontWeight: 600 }} noWrap>
-            {userName}
-          </Typography>
-          {stravaStatus?.hasStrava && !stravaStatus?.hasToken ? (
-            <Button
-              variant="contained"
-              size="small"
-              sx={{
-                fontSize: "0.75rem",
-                textTransform: "none",
-                bgcolor: OUTRUN_BURNT,
-                color: OUTRUN_WHITE,
-              }}
-              onClick={() => (user?.email ? connectStrava(user.email) : window.location.assign("/"))}
-            >
-              Reconnect Strava
-            </Button>
-          ) : (
-            <Typography variant="caption" color="text.primary" sx={{ fontSize: "0.75rem" }}>
-              Strava Connected
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
+        {/* Left: avatar + name + Strava */}
+        <Box sx={{ display: "flex", alignItems: "center", minWidth: 0, flex: "1 1 auto" }}>
+          <Avatar
+            sx={{
+              width: 40,
+              height: 40,
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
+              mr: 1.5,
+              fontWeight: 700,
+              fontSize: "0.875rem",
+            }}
+          >
+            {initials}
+          </Avatar>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle1" sx={{ fontSize: "0.95rem", fontWeight: 600 }} noWrap>
+              {userName}
             </Typography>
-          )}
+            {stravaStatus?.hasStrava && !stravaStatus?.hasToken ? (
+              <Button
+                variant="contained"
+                size="small"
+                sx={{
+                  fontSize: "0.75rem",
+                  textTransform: "none",
+                  bgcolor: OUTRUN_BURNT,
+                  color: OUTRUN_WHITE,
+                }}
+                onClick={() => (user?.email ? connectStrava(user.email) : window.location.assign("/"))}
+              >
+                Reconnect Strava
+              </Button>
+            ) : (
+              <Typography variant="caption" color="text.primary" sx={{ fontSize: "0.75rem" }}>
+                Strava Connected
+              </Typography>
+            )}
+          </Box>
         </Box>
-      </Box>
 
-      {challenge && (
-        <Box>
-          <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600, mb: 0.5 }}>
-            {challenge.name}
-          </Typography>
-          <Typography variant="body2" color="text.primary" sx={{ fontSize: "0.8rem", mb: 0.5 }}>
-            {daysRemaining !== null
-              ? `Challenge ends in ${daysRemaining} ${daysRemaining === 1 ? "day" : "days"}`
-              : "Challenge ended"}
-          </Typography>
-          <Typography variant="caption" display="block" sx={{ fontSize: "0.7rem" }}>
-            {new Date(challenge.starts_at).toLocaleDateString()} -{" "}
-            {new Date(challenge.ends_at).toLocaleDateString()}
-          </Typography>
-        </Box>
-      )}
+        {/* Right: challenge name + countdown + dates */}
+        {challenge && (
+          <Box sx={{ textAlign: "right", flexShrink: 0 }}>
+            <Typography variant="h6" sx={{ fontSize: "1rem", fontWeight: 600, mb: 0.25 }}>
+              {challenge.name}
+            </Typography>
+            <Typography variant="body2" color="text.primary" sx={{ fontSize: "0.8rem", mb: 0.25 }}>
+              {daysRemaining !== null
+                ? `Challenge ends in ${daysRemaining} ${daysRemaining === 1 ? "day" : "days"}`
+                : "Challenge ended"}
+            </Typography>
+            <Typography variant="caption" display="block" sx={{ fontSize: "0.7rem" }}>
+              {new Date(challenge.starts_at).toLocaleDateString()} – {new Date(challenge.ends_at).toLocaleDateString()}
+            </Typography>
+          </Box>
+        )}
+      </Box>
     </Paper>
   );
 }

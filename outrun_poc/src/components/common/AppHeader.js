@@ -169,11 +169,6 @@ export default function AppHeader({ show = true, hideNav = false }) {
               open={Boolean(menuAnchor)}
               onClose={handleMenuClose}
             >
-              {isAdmin && (
-                <MenuItem onClick={() => handleNavClick("/admin")} selected={router.pathname === "/admin"}>
-                  Admin
-                </MenuItem>
-              )}
               {navLinks.map((link) => (
                 <MenuItem
                   key={link.path}
@@ -184,6 +179,11 @@ export default function AppHeader({ show = true, hideNav = false }) {
                 </MenuItem>
               ))}
               <MenuItem onClick={handleRulesClick}>Rules</MenuItem>
+              {isAdmin && (
+                <MenuItem onClick={() => handleNavClick("/admin")} selected={router.pathname === "/admin"}>
+                  Admin
+                </MenuItem>
+              )}
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
           </Box>

@@ -24,6 +24,15 @@ export default function AuthCallbackPage() {
     return () => subscription?.unsubscribe();
   }, []);
 
+  // Redirect to home if no code and recovery not detected after a short wait (must run every render for Rules of Hooks)
+  useEffect(() => {
+    if (!router.isReady || router.query.code) return;
+    const t = setTimeout(() => {
+      if (!recoveryMode) router.replace("/");
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [router.isReady, router.query.code, recoveryMode]);
+
   const handleSetNewPassword = async (e) => {
     e?.preventDefault();
     setRecoveryError("");
@@ -142,15 +151,6 @@ export default function AuthCallbackPage() {
   if (router.query.code) {
     return <Typography sx={{ p: 4, textAlign: "center" }}>Signing you in…</Typography>;
   }
-
-  // No code: might be password recovery (hash); wait briefly for onAuthStateChange(PASSWORD_RECOVERY)
-  useEffect(() => {
-    if (!router.isReady || router.query.code) return;
-    const t = setTimeout(() => {
-      if (!recoveryMode) router.replace("/");
-    }, 2000);
-    return () => clearTimeout(t);
-  }, [router.isReady, router.query.code, recoveryMode]);
 
   return <Typography sx={{ p: 4, textAlign: "center" }}>Loading…</Typography>;
 }

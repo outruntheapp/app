@@ -281,7 +281,6 @@ export default function LandingPage() {
               </>
             ) : view === "forgot" ? (
               <>
-                <Typography variant="subtitle2">Forgot password</Typography>
                 {forgotSent ? (
                   <Alert severity="success">Check your email for a reset link.</Alert>
                 ) : (
@@ -309,7 +308,6 @@ export default function LandingPage() {
               </>
             ) : view === "signup" ? (
               <>
-                <Typography variant="subtitle2">Sign up</Typography>
                 <Alert severity="info" sx={{ fontSize: "0.8rem" }}>
                   Purchase a ticket at Entry Ninja if you haven&apos;t already, to be eligible for the challenge.
                 </Alert>
@@ -353,7 +351,6 @@ export default function LandingPage() {
               </>
             ) : (
               <>
-                <Typography variant="subtitle2">Sign in</Typography>
                 <form onSubmit={handleSignIn}>
                   <Stack spacing={2}>
                     <TextField

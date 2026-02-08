@@ -1,5 +1,5 @@
 // POST /api/admin/ticket-holders
-// Multipart: challenge_id, file (CSV with Name, email, RSA ID). Admin only. Upsert into challenge_ticket_holders.
+// Multipart: challenge_id, file (CSV with Name, email, ID number). Admin only. Upsert into challenge_ticket_holders.
 
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "./requireAdmin";
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
   const { rows } = parseCsv(csvText);
   const emailAliases = ["email", "e-mail", "email address"];
   const nameAliases = ["name", "full name", "fullname", "runner"];
-  const rsaAliases = ["rsa id", "rsa id number", "id number", "rsa_id"];
+  const idNumberAliases = ["rsa id", "rsa id number", "id number", "rsa_id", "id_number"];
 
   const findCol = (row, aliases) => {
     const key = Object.keys(row).find((k) => aliases.some((a) => k.includes(a) || a.includes(k)));
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
       continue;
     }
     const name = (findCol(row, nameAliases) || "").trim() || null;
-    const rsaId = (findCol(row, rsaAliases) || "").trim() || null;
+    const idNumber = (findCol(row, idNumberAliases) || "").trim() || null;
 
     const { error } = await supabase
       .from("challenge_ticket_holders")
@@ -102,7 +102,7 @@ export default async function handler(req, res) {
           challenge_id: effectiveChallengeId,
           email,
           name,
-          rsa_id: rsaId,
+          id_number: idNumber,
           source: "entry_ninja_csv",
         },
         { onConflict: "challenge_id,email" }

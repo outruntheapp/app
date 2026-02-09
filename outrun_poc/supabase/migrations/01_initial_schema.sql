@@ -171,6 +171,7 @@ select
   sr.stage_number,
   u.id as user_id,
   u.full_name,
+  u.sex,
   sr.best_time_seconds
 from stage_results sr
 join challenges c on c.id = sr.challenge_id and c.is_active = true

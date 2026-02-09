@@ -31,6 +31,7 @@ import { getAdminUser } from "../utils/adminAuth";
 import { setParticipantExcluded } from "../services/adminService";
 import ParticipantTable from "../components/admin/ParticipantTable";
 import ExportWinnersButton from "../components/admin/ExportWinnersButton";
+import { OUTRUN_WHITE, OUTRUN_TEXT_SECONDARY } from "../styles/theme";
 
 const ADMIN_CHALLENGES_URL = "/api/admin/challenges";
 const ADMIN_PARTICIPANTS_URL = "/api/admin/participants";
@@ -355,7 +356,15 @@ export default function AdminPage() {
         <Typography variant="h5" sx={{ mb: 2 }}>
           Admin
         </Typography>
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ mb: 2 }}>
+        <Tabs
+          value={tabValue}
+          onChange={(_, v) => setTabValue(v)}
+          sx={{
+            mb: 2,
+            "& .MuiTab-root": { color: OUTRUN_WHITE },
+            "& .Mui-selected": { color: OUTRUN_TEXT_SECONDARY },
+          }}
+        >
           <Tab label="Challenges" />
           <Tab label="Participants" />
           <Tab label="Audit Logs" />
@@ -399,7 +408,7 @@ export default function AdminPage() {
                   onChange={(e) => setAddEndsAt(e.target.value)}
                   InputLabelProps={{ shrink: true }}
                 />
-                <Button variant="contained" onClick={handleAddChallenge}>
+                <Button variant="contained" onClick={handleAddChallenge} sx={{ height: 40 }}>
                   Add
                 </Button>
               </Stack>
@@ -412,7 +421,10 @@ export default function AdminPage() {
             )}
             <Paper sx={{ p: 2 }}>
               <Typography variant="subtitle1" gutterBottom>
-                Ticket holders (Entry Ninja CSV)
+                Upload ticket holders (Entry Ninja CSV)
+              </Typography>
+              <Typography variant="caption" color="text.primary">
+                IMPORTANT COLUMNS: name, email, id_number
               </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-end" sx={{ flexWrap: "wrap" }}>
                 <FormControl size="small" sx={{ minWidth: 220 }}>
@@ -427,7 +439,7 @@ export default function AdminPage() {
                     ))}
                   </Select>
                 </FormControl>
-                <Button variant="outlined" component="label" size="medium">
+                <Button variant="outlined" component="label" sx={{ height: 40 }}>
                   {ticketHoldersFile ? ticketHoldersFile.name : "Choose CSV"}
                   <input
                     type="file"
@@ -440,6 +452,7 @@ export default function AdminPage() {
                   variant="contained"
                   disabled={!ticketHoldersChallengeId || !ticketHoldersFile || ticketHoldersUploading}
                   onClick={handleTicketHoldersUpload}
+                  sx={{ height: 40 }}
                 >
                   {ticketHoldersUploading ? "Uploading…" : "Upload"}
                 </Button>

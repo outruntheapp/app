@@ -359,9 +359,17 @@ export default function AdminPage() {
         <Tabs
           value={tabValue}
           onChange={(_, v) => setTabValue(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           sx={{
             mb: 2,
-            "& .MuiTab-root": { color: OUTRUN_WHITE },
+            "& .MuiTab-root": {
+              color: OUTRUN_WHITE,
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              minHeight: { xs: 42, sm: 48 },
+              px: { xs: 1, sm: 2 },
+            },
             "& .Mui-selected": { color: OUTRUN_TEXT_SECONDARY },
           }}
         >
@@ -509,6 +517,11 @@ export default function AdminPage() {
                             variant="outlined"
                             disabled={reimportChallengeId === c.id}
                             onClick={() => handleReimportRoutes(c.id)}
+                            sx={{
+                              fontSize: { xs: "0.7rem", sm: "0.8125rem" },
+                              px: { xs: 1, sm: 2 },
+                              py: { xs: 0.5, sm: 0.75 },
+                            }}
                           >
                             {reimportChallengeId === c.id ? "Importing…" : "Re-import routes from GPX"}
                           </Button>

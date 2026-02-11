@@ -105,9 +105,17 @@ export default function LeaderboardPage() {
             <Tabs
               value={tabValue}
               onChange={(e, newValue) => setTabValue(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
               sx={{
                 mb: 2,
-                "& .MuiTab-root": { color: OUTRUN_WHITE },
+                "& .MuiTab-root": {
+                  color: OUTRUN_WHITE,
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                  minHeight: { xs: 42, sm: 48 },
+                  px: { xs: 1, sm: 2 },
+                },
                 "& .MuiTab-root.Mui-selected": { color: OUTRUN_BLACK },
                 "& .MuiTabs-indicator": { backgroundColor: OUTRUN_BLACK },
               }}
@@ -124,8 +132,14 @@ export default function LeaderboardPage() {
                 onChange={(e, newValue) => setGenderFilter(newValue)}
                 variant="scrollable"
                 scrollButtons="auto"
+                allowScrollButtonsMobile
                 sx={{
-                  "& .MuiTab-root": { color: OUTRUN_WHITE },
+                  "& .MuiTab-root": {
+                    color: OUTRUN_WHITE,
+                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                    minHeight: { xs: 42, sm: 48 },
+                    px: { xs: 1, sm: 2 },
+                  },
                   "& .MuiTab-root.Mui-selected": { color: OUTRUN_BLACK },
                   "& .MuiTabs-indicator": { backgroundColor: OUTRUN_BLACK },
                 }}

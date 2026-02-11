@@ -101,7 +101,14 @@ export default function RoutesPage() {
         >
           <Paper sx={{ p: 2, mb: 2, flexShrink: 0 }}>
             {challenge && (
-              <Typography variant="h5" gutterBottom>
+              <Typography
+                variant="h5"
+                gutterBottom
+                sx={{
+                  fontSize: { xs: "1.1rem", sm: undefined },
+                  fontWeight: 700,
+                }}
+              >
                 {challenge.name} Routes
               </Typography>
             )}

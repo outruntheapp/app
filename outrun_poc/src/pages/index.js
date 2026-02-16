@@ -10,7 +10,6 @@ import RulesDialog from "../components/common/RulesDialog";
 import { fetchActiveChallenge } from "../services/challengeService";
 import { isCurrentUserParticipant, joinActiveChallenge } from "../services/participantService";
 import { supabase } from "../services/supabaseClient";
-import { isDemoMode, disableDemoMode } from "../utils/demoMode";
 import { connectStrava, clearStoredEmail } from "../services/authService";
 import name from "../assets/name.png";
 import logo from "../assets/logo.png";
@@ -24,7 +23,6 @@ export default function LandingPage() {
   const [isParticipant, setIsParticipant] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
   const [authUser, setAuthUser] = useState(null);
   const [joiningChallenge, setJoiningChallenge] = useState(false);
 
@@ -52,7 +50,6 @@ export default function LandingPage() {
   useEffect(() => {
     clearStoredEmail();
     loadData();
-    setDemoMode(isDemoMode());
   }, []);
 
   const loadData = async () => {
@@ -75,10 +72,6 @@ export default function LandingPage() {
 
   const handleJoinChallenge = async () => {
     try {
-      if (demoMode) {
-        await loadData();
-        return;
-      }
       if (authUser && challenge && !isParticipant) {
         setJoiningChallenge(true);
         const result = await joinActiveChallenge();
@@ -187,23 +180,6 @@ export default function LandingPage() {
     }
   };
 
-  const handleToggleDemoMode = async () => {
-    if (demoMode) {
-      disableDemoMode();
-      setDemoMode(false);
-      window.location.reload();
-    } else {
-      const { enableDemoMode } = await import("../utils/demoMode");
-      const result = await enableDemoMode();
-      if (result.success) {
-        setDemoMode(true);
-        window.location.reload();
-      } else {
-        alert("Failed to enable demo mode. Check console for details.");
-      }
-    }
-  };
-
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
@@ -226,16 +202,6 @@ export default function LandingPage() {
         pb: 6,
       }}
     >
-      <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 1000 }}>
-        <Chip
-          label={demoMode ? "Demo Mode ON" : "Demo Mode OFF"}
-          color={demoMode ? "primary" : "default"}
-          onClick={handleToggleDemoMode}
-          clickable
-          size="small"
-        />
-      </Box>
-
       <Container maxWidth="xs" sx={{ py: 6 }}>
         <Stack spacing={3} alignItems="center">
           <Box

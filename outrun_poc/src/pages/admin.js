@@ -72,6 +72,10 @@ export default function AdminPage() {
   const [uploadFiles, setUploadFiles] = useState({ stage1: null, stage2: null, stage3: null });
   const [uploadingGpx, setUploadingGpx] = useState(false);
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteChallenge, setDeleteChallenge] = useState(null);
+  const [deletingChallenge, setDeletingChallenge] = useState(false);
+
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditHasMore, setAuditHasMore] = useState(false);
@@ -336,6 +340,44 @@ export default function AdminPage() {
       setReimportMessage({ type: "error", text: e.message || "Upload failed" });
     } finally {
       setUploadingGpx(false);
+    }
+  };
+
+  const openDeleteDialog = (challengeRow) => {
+    setReimportMessage(null);
+    setDeleteChallenge(challengeRow);
+    setDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    if (deletingChallenge) return;
+    setDeleteDialogOpen(false);
+    setDeleteChallenge(null);
+  };
+
+  const handleDeleteChallenge = async () => {
+    if (!deleteChallenge?.id) return;
+    const headers = await getAuthHeaders();
+    if (!headers.Authorization) return;
+    setDeletingChallenge(true);
+    setReimportMessage(null);
+    try {
+      const res = await fetch(`${ADMIN_CHALLENGES_URL}/${deleteChallenge.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", ...headers },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReimportMessage({ type: "error", text: data.error || res.statusText });
+        return;
+      }
+      setReimportMessage({ type: "success", text: `Deleted challenge ${deleteChallenge.slug ?? deleteChallenge.name ?? ""}.` });
+      closeDeleteDialog();
+      loadChallenges();
+    } catch (e) {
+      setReimportMessage({ type: "error", text: e.message || "Delete failed" });
+    } finally {
+      setDeletingChallenge(false);
     }
   };
 
@@ -618,6 +660,15 @@ export default function AdminPage() {
                               Set active
                             </Button>
                           )}
+                          <Button
+                            size="small"
+                            color="error"
+                            disabled={!!c.is_active}
+                            onClick={() => openDeleteDialog(c)}
+                            sx={{ ml: 1 }}
+                          >
+                            Delete
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -672,6 +723,34 @@ export default function AdminPage() {
             </Button>
             <Button variant="contained" onClick={handleUploadGpx} disabled={uploadingGpx}>
               {uploadingGpx ? "Uploading…" : "Upload"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={deleteDialogOpen} onClose={closeDeleteDialog} fullWidth maxWidth="xs">
+          <DialogTitle>Delete challenge?</DialogTitle>
+          <DialogContent dividers>
+            <Typography variant="body2" color="text.secondary">
+              This will permanently delete <strong>{deleteChallenge?.name ?? deleteChallenge?.slug ?? "this challenge"}</strong> and its related
+              routes, participants, and stage results.
+            </Typography>
+            {deleteChallenge?.is_active && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                You can’t delete the active challenge. Set a different challenge active first.
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeDeleteDialog} disabled={deletingChallenge}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleDeleteChallenge}
+              disabled={deletingChallenge || !!deleteChallenge?.is_active}
+            >
+              {deletingChallenge ? "Deleting…" : "Delete"}
             </Button>
           </DialogActions>
         </Dialog>

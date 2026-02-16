@@ -11,7 +11,7 @@ import RankCard from "../components/dashboard/RankCard";
 import { isCurrentUserParticipant } from "../services/participantService";
 import { supabase } from "../services/supabaseClient";
 
-const ENTRY_NINJA_URL = "https://www.entryninja.com/events/83346-outrun-virtual-run";
+const RACEPASS_URL = "https://racepass.com/za/races/outrun";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -73,7 +73,7 @@ export default function DashboardPage() {
               <Alert severity="info" sx={{ "& a": { color: "inherit", textDecoration: "underline" } }}>
                 <Typography variant="body2">
                   You&apos;re not registered for this challenge. Get your ticket at{" "}
-                  <a href={ENTRY_NINJA_URL} target="_blank" rel="noopener noreferrer">Entry Ninja</a>.
+                  <a href={RACEPASS_URL} target="_blank" rel="noopener noreferrer">Racepass</a>.
                 </Typography>
               </Alert>
             )}

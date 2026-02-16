@@ -1,4 +1,4 @@
--- Entry Ninja ticket validation: store allowed ticket holders per challenge.
+-- Racepass ticket validation: store allowed ticket holders per challenge.
 -- Gating: only users in this table (or users.role = 'admin') can be added as participants.
 
 create table if not exists public.challenge_ticket_holders (
@@ -24,4 +24,4 @@ create policy "challenge_ticket_holders_service_only"
   using (false)
   with check (false);
 
-comment on table public.challenge_ticket_holders is 'Allowed ticket holders per challenge (e.g. Entry Ninja CSV). Used to gate participant creation. Admins (users.role = admin) bypass.';
+comment on table public.challenge_ticket_holders is 'Allowed ticket holders per challenge (e.g. Racepass CSV). Used to gate participant creation. Admins (users.role = admin) bypass.';

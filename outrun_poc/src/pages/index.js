@@ -16,7 +16,7 @@ import name from "../assets/name.png";
 import logo from "../assets/logo.png";
 import { OUTRUN_WHITE } from "../styles/theme";
 
-const ENTRY_NINJA_URL = "https://www.entryninja.com/events/83346-outrun-virtual-run";
+const RACEPASS_URL = "https://racepass.com/za/races/outrun";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -87,7 +87,7 @@ export default function LandingPage() {
           await loadData();
         } else {
           if (result.code === "TICKET_REQUIRED") {
-            alert("You need a valid OUTRUN ticket to join. Purchase at Entry Ninja: " + ENTRY_NINJA_URL);
+            alert("You need a valid OUTRUN ticket to join. Purchase at Racepass: " + RACEPASS_URL);
           } else {
             alert(result.error || "Failed to join challenge. Please try again.");
           }
@@ -274,8 +274,8 @@ export default function LandingPage() {
                 </Button>
                 <Typography variant="caption" display="block" sx={{ textAlign: "center", color: OUTRUN_WHITE }}>
                   Event is ticketed via{" "}
-                  <a href={ENTRY_NINJA_URL} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>
-                    Entry Ninja
+                  <a href={RACEPASS_URL} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>
+                    Racepass
                   </a>
                 </Typography>
               </>
@@ -309,7 +309,7 @@ export default function LandingPage() {
             ) : view === "signup" ? (
               <>
                 <Alert severity="info" sx={{ fontSize: "0.8rem" }}>
-                  Purchase a ticket at Entry Ninja if you haven&apos;t already, to be eligible for the challenge.
+                  Purchase a ticket at Racepass if you haven&apos;t already, to be eligible for the challenge.
                 </Alert>
                 <form onSubmit={handleSignUp}>
                   <Stack spacing={2}>
@@ -400,8 +400,8 @@ export default function LandingPage() {
                 </Button>
                 <Typography variant="caption" display="block" sx={{ textAlign: "center", color: OUTRUN_WHITE }}>
                   Event is ticketed via{" "}
-                  <a href={ENTRY_NINJA_URL} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>
-                    Entry Ninja
+                  <a href={RACEPASS_URL} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>
+                    Racepass
                   </a>
                 </Typography>
               </>

@@ -500,7 +500,7 @@ export default function AdminPage() {
             )}
             <Paper sx={{ p: 2 }}>
               <Typography variant="subtitle1" gutterBottom>
-                Upload ticket holders (Entry Ninja CSV)
+                Upload ticket holders (Racepass CSV)
               </Typography>
               <Typography variant="caption" color="text.primary">
                 IMPORTANT COLUMNS: name, email, id_number

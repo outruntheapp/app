@@ -116,7 +116,7 @@ create table if not exists routes (
   min_overlap_ratio numeric default 0.8
 );
 
--- Challenge ticket holders (Entry Ninja CSV; gates participant creation)
+-- Challenge ticket holders (Racepass CSV; gates participant creation)
 create table if not exists public.challenge_ticket_holders (
   id uuid primary key default uuid_generate_v4(),
   challenge_id uuid not null references challenges(id) on delete cascade,
@@ -131,7 +131,7 @@ create table if not exists public.challenge_ticket_holders (
 create index if not exists idx_challenge_ticket_holders_lookup
   on public.challenge_ticket_holders (challenge_id, email);
 
-comment on table public.challenge_ticket_holders is 'Allowed ticket holders per challenge (e.g. Entry Ninja CSV). Used to gate participant creation. Admins (users.role = admin) bypass.';
+comment on table public.challenge_ticket_holders is 'Allowed ticket holders per challenge (e.g. Racepass CSV). Used to gate participant creation. Admins (users.role = admin) bypass.';
 
 -- Cron audit trail (when each cron job ran)
 create table if not exists cron_audit_logs (

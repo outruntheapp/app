@@ -162,7 +162,7 @@ outrun_poc/
 ## MVP Scope Constraints (Intentional)
 
 * One active challenge at a time (enforced in DB; structure supports multiple later)
-* Ticketing via **challenge_ticket_holders**: Admin uploads CSV (name, email, ID number) per challenge; only listed users (or admins) can join. No in-app payment; purchase is external (e.g. Entry Ninja).
+* Ticketing via **challenge_ticket_holders**: Admin uploads CSV (name, email, ID number) per challenge; only listed users (or admins) can join. No in-app payment; purchase is external (e.g. Racepass).
 * No notifications
 * No manual activity approval 
 * No activity-level edits

@@ -6,6 +6,9 @@ import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
 
+const ROUTES_BUCKET = "routes";
+const SAFE_SLUG = /^[a-zA-Z0-9_-]+$/;
+
 const LOG = (level, message, meta = {}) => {
   const prefix = "[Routes API]";
   const payload = Object.keys(meta).length ? { ...meta } : null;
@@ -47,8 +50,29 @@ function getBaseUrl(req) {
 }
 
 /** Load GPX text: try HTTP first, then fs from public (for serverless where self-fetch can fail). Uses active challenge slug. */
-async function loadGpxText(stage, baseUrl, req, slug) {
-  const safeSlug = slug && /^[a-zA-Z0-9_-]+$/.test(slug) ? slug : "challenge_1";
+async function loadGpxText(stage, baseUrl, req, slug, supabase) {
+  const safeSlug = slug && SAFE_SLUG.test(slug) ? slug : "challenge_1";
+
+  // Prefer Supabase Storage (production-friendly)
+  if (supabase) {
+    const objectPath = `${safeSlug}/stage-${stage}.gpx`;
+    try {
+      const { data, error } = await supabase.storage.from(ROUTES_BUCKET).download(objectPath);
+      if (!error && data) {
+        if (typeof data.text === "function") return await data.text();
+        if (typeof data.arrayBuffer === "function") {
+          const ab = await data.arrayBuffer();
+          return Buffer.from(ab).toString("utf8");
+        }
+      } else if (error) {
+        LOG("warn", "storage download failed", { stage, slug: safeSlug, message: error.message });
+      }
+    } catch (e) {
+      LOG("warn", "storage download threw", { stage, slug: safeSlug, message: e.message });
+    }
+  }
+
+  // Back-compat: try static public/ routes (or HTTP to /routes for dev)
   const url = `${baseUrl}/routes/${safeSlug}/stage-${stage}.gpx`;
   try {
     const response = await fetch(url);
@@ -76,8 +100,9 @@ export default async function handler(req, res) {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
     let activeSlug = "challenge_1";
     let activeChallengeId = null;
+    let supabase = null;
     if (supabaseUrl && serviceRoleKey) {
-      const supabase = createClient(supabaseUrl, serviceRoleKey);
+      supabase = createClient(supabaseUrl, serviceRoleKey);
       const { data: activeChallenge } = await supabase
         .from("challenges")
         .select("id, slug")
@@ -92,7 +117,7 @@ export default async function handler(req, res) {
     const wkts = { 1: null, 2: null, 3: null };
 
     for (let stage = 1; stage <= 3; stage++) {
-      const gpxText = await loadGpxText(stage, baseUrl, req, activeSlug);
+      const gpxText = await loadGpxText(stage, baseUrl, req, activeSlug, supabase);
       if (!gpxText) continue;
 
       const coords = parseGpxTrkpt(gpxText);

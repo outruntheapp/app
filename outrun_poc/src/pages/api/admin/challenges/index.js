@@ -3,6 +3,9 @@
 
 import { requireAdmin } from "../requireAdmin";
 
+const ROUTES_BUCKET = "routes";
+const REQUIRED_GPX_FILES = ["stage-1.gpx", "stage-2.gpx", "stage-3.gpx"];
+
 export default async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -19,7 +22,33 @@ export default async function handler(req, res) {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
-    return res.status(200).json(data || []);
+    const challenges = data || [];
+
+    // Decorate with GPX presence info from Storage (fallback-safe: if bucket missing, treat as not present).
+    const decorated = await Promise.all(
+      challenges.map(async (c) => {
+        const slug = c.slug || "";
+        if (!slug) return { ...c, has_gpx_files: false, missing_gpx_stages: [1, 2, 3] };
+        try {
+          const { data: files, error: listError } = await supabase.storage
+            .from(ROUTES_BUCKET)
+            .list(slug, { limit: 100, offset: 0 });
+          if (listError) {
+            return { ...c, has_gpx_files: false, missing_gpx_stages: [1, 2, 3] };
+          }
+          const names = new Set((files || []).map((f) => f.name));
+          const missing = [];
+          REQUIRED_GPX_FILES.forEach((fname, idx) => {
+            if (!names.has(fname)) missing.push(idx + 1);
+          });
+          return { ...c, has_gpx_files: missing.length === 0, missing_gpx_stages: missing.length ? missing : undefined };
+        } catch (_) {
+          return { ...c, has_gpx_files: false, missing_gpx_stages: [1, 2, 3] };
+        }
+      })
+    );
+
+    return res.status(200).json(decorated);
   }
 
   if (req.method === "POST") {

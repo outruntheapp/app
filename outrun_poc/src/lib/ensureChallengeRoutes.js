@@ -4,6 +4,9 @@
 import fs from "fs";
 import path from "path";
 
+const ROUTES_BUCKET = "routes";
+const SAFE_SLUG = /^[a-zA-Z0-9_-]+$/;
+
 function parseGpxTrkpt(gpxText) {
   const coords = [];
   const regex = /<trkpt\s+lat="([^"]+)"\s+lon="([^"]+)"/g;
@@ -22,12 +25,34 @@ function coordsToWkt(coords) {
 }
 
 function loadGpxFromFs(slug, stage) {
-  const safeSlug = slug && /^[a-zA-Z0-9_-]+$/.test(slug) ? slug : "challenge_1";
+  const safeSlug = slug && SAFE_SLUG.test(slug) ? slug : "challenge_1";
   const publicPath = path.join(process.cwd(), "public", "routes", safeSlug, `stage-${stage}.gpx`);
   try {
     if (fs.existsSync(publicPath)) return fs.readFileSync(publicPath, "utf8");
   } catch (_) {}
   return null;
+}
+
+async function loadGpxText(supabase, slug, stage) {
+  const safeSlug = slug && SAFE_SLUG.test(slug) ? slug : "challenge_1";
+  const objectPath = `${safeSlug}/stage-${stage}.gpx`;
+
+  // Prefer Storage (production-friendly), fall back to local public/ routes.
+  try {
+    const { data, error } = await supabase.storage.from(ROUTES_BUCKET).download(objectPath);
+    if (!error && data) {
+      // supabase-js returns a Blob in Node runtimes.
+      if (typeof data.text === "function") return await data.text();
+      if (typeof data.arrayBuffer === "function") {
+        const ab = await data.arrayBuffer();
+        return Buffer.from(ab).toString("utf8");
+      }
+    }
+  } catch (_) {
+    // ignore and fall back to fs
+  }
+
+  return loadGpxFromFs(safeSlug, stage);
 }
 
 /**
@@ -47,7 +72,7 @@ export async function ensureChallengeRoutes(supabase, challengeId, slug) {
 
   const wkts = { 1: null, 2: null, 3: null };
   for (let stage = 1; stage <= 3; stage++) {
-    const gpxText = loadGpxFromFs(slug, stage);
+    const gpxText = await loadGpxText(supabase, slug, stage);
     if (!gpxText) continue;
     const coords = parseGpxTrkpt(gpxText);
     if (coords.length > 0) wkts[stage] = coordsToWkt(coords);
@@ -78,7 +103,7 @@ export async function ensureChallengeRoutes(supabase, challengeId, slug) {
 export async function forceSyncChallengeRoutesFromGpx(supabase, challengeId, slug) {
   const wkts = { 1: null, 2: null, 3: null };
   for (let stage = 1; stage <= 3; stage++) {
-    const gpxText = loadGpxFromFs(slug, stage);
+    const gpxText = await loadGpxText(supabase, slug, stage);
     if (!gpxText) continue;
     const coords = parseGpxTrkpt(gpxText);
     if (coords.length > 0) wkts[stage] = coordsToWkt(coords);

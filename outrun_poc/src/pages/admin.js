@@ -24,6 +24,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import AppHeader from "../components/common/AppHeader";
 import { supabase } from "../services/supabaseClient";
@@ -37,6 +41,7 @@ const ADMIN_CHALLENGES_URL = "/api/admin/challenges";
 const ADMIN_PARTICIPANTS_URL = "/api/admin/participants";
 const ADMIN_AUDIT_LOGS_URL = "/api/admin/audit-logs";
 const ADMIN_CRON_AUDIT_LOGS_URL = "/api/admin/cron-audit-logs";
+const ADMIN_UPLOAD_GPX_URL = "/api/admin/upload-gpx";
 
 function getAuthHeaders() {
   return new Promise((resolve) => {
@@ -61,6 +66,11 @@ export default function AdminPage() {
   const [tabValue, setTabValue] = useState(0);
   const [reimportChallengeId, setReimportChallengeId] = useState(null);
   const [reimportMessage, setReimportMessage] = useState(null);
+
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadChallenge, setUploadChallenge] = useState(null);
+  const [uploadFiles, setUploadFiles] = useState({ stage1: null, stage2: null, stage3: null });
+  const [uploadingGpx, setUploadingGpx] = useState(false);
 
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -228,6 +238,13 @@ export default function AdminPage() {
     setAddStartsAt("");
     setAddEndsAt("");
     loadChallenges();
+
+    // Prompt GPX upload right after creating a new challenge
+    if (data?.id && data?.slug) {
+      setUploadChallenge(data);
+      setUploadFiles({ stage1: null, stage2: null, stage3: null });
+      setUploadDialogOpen(true);
+    }
   };
 
   const handleSetActive = async (id) => {
@@ -265,6 +282,60 @@ export default function AdminPage() {
       setReimportMessage({ type: "error", text: e.message || "Re-import failed" });
     } finally {
       setReimportChallengeId(null);
+    }
+  };
+
+  const openUploadDialog = (challengeRow) => {
+    setReimportMessage(null);
+    setUploadChallenge(challengeRow);
+    setUploadFiles({ stage1: null, stage2: null, stage3: null });
+    setUploadDialogOpen(true);
+  };
+
+  const closeUploadDialog = () => {
+    if (uploadingGpx) return;
+    setUploadDialogOpen(false);
+    setUploadChallenge(null);
+    setUploadFiles({ stage1: null, stage2: null, stage3: null });
+  };
+
+  const handleUploadGpx = async () => {
+    if (!uploadChallenge?.id) return;
+    if (!uploadFiles.stage1 || !uploadFiles.stage2 || !uploadFiles.stage3) {
+      setReimportMessage({ type: "error", text: "Please choose Stage 1, Stage 2, and Stage 3 GPX files." });
+      return;
+    }
+    const headers = await getAuthHeaders();
+    if (!headers.Authorization) return;
+    setUploadingGpx(true);
+    setReimportMessage(null);
+
+    try {
+      const form = new FormData();
+      form.append("challenge_id", uploadChallenge.id);
+      form.append("stage_1", uploadFiles.stage1);
+      form.append("stage_2", uploadFiles.stage2);
+      form.append("stage_3", uploadFiles.stage3);
+      const res = await fetch(ADMIN_UPLOAD_GPX_URL, {
+        method: "POST",
+        headers: { Authorization: headers.Authorization },
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReimportMessage({ type: "error", text: data.error || res.statusText });
+        return;
+      }
+      setReimportMessage({
+        type: "success",
+        text: `Uploaded GPX and synced ${data.count ?? 0} route(s) for ${data.slug ?? uploadChallenge.slug ?? "challenge"}.`,
+      });
+      closeUploadDialog();
+      loadChallenges();
+    } catch (e) {
+      setReimportMessage({ type: "error", text: e.message || "Upload failed" });
+    } finally {
+      setUploadingGpx(false);
     }
   };
 
@@ -512,19 +583,34 @@ export default function AdminPage() {
                         <TableCell>{c.ends_at ? new Date(c.ends_at).toLocaleString() : "—"}</TableCell>
                         <TableCell>{c.is_active ? <Chip label="Active" color="primary" size="small" /> : "—"}</TableCell>
                         <TableCell>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            disabled={reimportChallengeId === c.id}
-                            onClick={() => handleReimportRoutes(c.id)}
-                            sx={{
-                              fontSize: { xs: "0.7rem", sm: "0.8125rem" },
-                              px: { xs: 1, sm: 2 },
-                              py: { xs: 0.5, sm: 0.75 },
-                            }}
-                          >
-                            {reimportChallengeId === c.id ? "Importing…" : "Re-import routes from GPX"}
-                          </Button>
+                          {c.has_gpx_files ? (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              disabled={reimportChallengeId === c.id}
+                              onClick={() => handleReimportRoutes(c.id)}
+                              sx={{
+                                fontSize: { xs: "0.7rem", sm: "0.8125rem" },
+                                px: { xs: 1, sm: 2 },
+                                py: { xs: 0.5, sm: 0.75 },
+                              }}
+                            >
+                              {reimportChallengeId === c.id ? "Importing…" : "Re-import routes from GPX"}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              onClick={() => openUploadDialog(c)}
+                              sx={{
+                                fontSize: { xs: "0.7rem", sm: "0.8125rem" },
+                                px: { xs: 1, sm: 2 },
+                                py: { xs: 0.5, sm: 0.75 },
+                              }}
+                            >
+                              Upload GPX files
+                            </Button>
+                          )}
                         </TableCell>
                         <TableCell>
                           {!c.is_active && (
@@ -541,6 +627,54 @@ export default function AdminPage() {
             </Paper>
           </Stack>
         )}
+
+        <Dialog open={uploadDialogOpen} onClose={closeUploadDialog} fullWidth maxWidth="sm">
+          <DialogTitle>Upload GPX files</DialogTitle>
+          <DialogContent dividers>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Upload stage GPX files for <strong>{uploadChallenge?.name || uploadChallenge?.slug || "challenge"}</strong>.
+              Files will be stored under <code>routes/{uploadChallenge?.slug}/</code>.
+            </Typography>
+
+            <Stack spacing={1.5}>
+              <Button variant="outlined" component="label" disabled={uploadingGpx}>
+                {uploadFiles.stage1 ? uploadFiles.stage1.name : "Choose Stage 1 GPX"}
+                <input
+                  type="file"
+                  accept=".gpx,application/gpx+xml,application/octet-stream,text/xml,application/xml"
+                  hidden
+                  onChange={(e) => setUploadFiles((p) => ({ ...p, stage1: e.target.files?.[0] ?? null }))}
+                />
+              </Button>
+              <Button variant="outlined" component="label" disabled={uploadingGpx}>
+                {uploadFiles.stage2 ? uploadFiles.stage2.name : "Choose Stage 2 GPX"}
+                <input
+                  type="file"
+                  accept=".gpx,application/gpx+xml,application/octet-stream,text/xml,application/xml"
+                  hidden
+                  onChange={(e) => setUploadFiles((p) => ({ ...p, stage2: e.target.files?.[0] ?? null }))}
+                />
+              </Button>
+              <Button variant="outlined" component="label" disabled={uploadingGpx}>
+                {uploadFiles.stage3 ? uploadFiles.stage3.name : "Choose Stage 3 GPX"}
+                <input
+                  type="file"
+                  accept=".gpx,application/gpx+xml,application/octet-stream,text/xml,application/xml"
+                  hidden
+                  onChange={(e) => setUploadFiles((p) => ({ ...p, stage3: e.target.files?.[0] ?? null }))}
+                />
+              </Button>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeUploadDialog} disabled={uploadingGpx}>
+              Cancel
+            </Button>
+            <Button variant="contained" onClick={handleUploadGpx} disabled={uploadingGpx}>
+              {uploadingGpx ? "Uploading…" : "Upload"}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {tabValue === 1 && (
           <Stack spacing={2}>

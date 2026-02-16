@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Standalone version for Supabase Dashboard deployment
 // Copy this entire file into Supabase Dashboard → Edge Functions → Create Function
 
@@ -23,7 +24,8 @@ async function hasValidTicketForChallenge(
   userEmail: string | null | undefined,
   userRole: string | null | undefined
 ): Promise<boolean> {
-  if (userRole === "admin") return true;
+  const role = typeof userRole === "string" ? userRole.trim().toLowerCase() : "";
+  if (role === "admin") return true;
   const email = typeof userEmail === "string" ? userEmail.trim().toLowerCase() : "";
   if (!email) return false;
   const { data, error } = await supabaseAdmin

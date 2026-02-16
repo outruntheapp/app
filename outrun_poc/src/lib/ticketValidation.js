@@ -11,7 +11,8 @@
  * @param {string|null|undefined} userRole - user's role from users.role
  */
 export async function hasValidTicketForChallenge(supabase, challengeId, userEmail, userRole) {
-  if (userRole === "admin") return true;
+  const role = typeof userRole === "string" ? userRole.trim().toLowerCase() : "";
+  if (role === "admin") return true;
   const email = typeof userEmail === "string" ? userEmail.trim().toLowerCase() : "";
   if (!email) return false;
   const { data, error } = await supabase

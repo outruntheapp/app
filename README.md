@@ -32,7 +32,7 @@ This repository represents a **validation-focused MVP / proof of concept**, desi
 - **public.users**: `id` (uuid, PK, FK to auth.users), `strava_athlete_id` (unique), `full_name`, `sex`, `created_at`, `email` (unique), `role` (default `'participant'`; set to `'admin'` in DB for admin access), `id_number` (optional, from sign-up). Synced from Supabase Auth.
 - **challenges**: `slug` (unique, not null), one active challenge enforced via partial unique index.
 - **challenge_ticket_holders**: Per-challenge allowlist (`challenge_id`, `email`, `name`, `id_number`, `ticket_type`); gates participant creation unless `users.role = 'admin'`. Populated via Admin CSV upload. `ticket_type` is used for leaderboard icons (⚪️ basic, 🟠 premium, ⚫️ apex).
-- **participants, activities, stage_results, routes, audit_logs, strava_tokens, cron_audit_logs**: See `outrun_poc/supabase/migrations/01_initial_schema.sql` (consolidated schema for new projects). Incremental migrations 02–17 exist for existing DBs.
+- **participants, activities, stage_results, routes, audit_logs, strava_tokens, cron_audit_logs**: See `outrun_poc/supabase/migrations/01_initial_schema.sql` (consolidated schema for new projects). Incremental migrations 02–19 exist for existing DBs.
 
 ---
 
@@ -112,7 +112,7 @@ outrun_poc/
 │   │   ├── set-existing-users-password/ # One-off: set all users' password to 000000
 │   │   ├── standalone/   # Dashboard-deployable copies (no _shared): auth-*, sync-*, process-*, etc.
 │   │   └── _shared/      # geo, audit, supabase, ticketValidation
-│   └── migrations/       # 01_initial_schema.sql (full schema); 02–17 incremental
+│   └── migrations/       # 01_initial_schema.sql (full schema); 02–19 incremental
 │
 ├── demo/                  # Demo mode data and polyline generation
 └── scripts/               # One-off scripts (see scripts/README.md)
@@ -287,7 +287,7 @@ Without refactoring core logic.
 
 ### Admin
 - **Admin access**: Users with `users.role = 'admin'` (set in DB). Admin: Challenges, **Ticket holders** (CSV upload per challenge), Participants, Audit logs, Cron logs, Re-import routes.
-- **Ticket holders**: POST `/api/admin/ticket-holders` with `challenge_id` and CSV (columns: name, email, ID number). Upserts into `challenge_ticket_holders`. Join and Strava callback gated: only listed email (or admin) can become participant.
+- **Ticket holders**: POST `/api/admin/ticket-holders` with `challenge_id` and CSV (columns: name, email, ID number, type). Upserts into `challenge_ticket_holders` (stores `ticket_type` as `basic|premium|apex`). Join and Strava callback gated: only listed email (or admin) can become participant. Ticket type is shown in Admin → Participants and as icons on leaderboards (⚪️ basic, 🟠 premium, ⚫️ apex).
 - **Cron**: `sync-strava-activities`, `process-activities` via pg_cron + pg_net. Run `outrun_poc/supabase/sql/cron_schedule.sql` once (replace PROJECT_REF and SERVICE_ROLE_KEY). Requires pg_net (in `01_initial_schema.sql`).
 
 ### Schema & Scripts
@@ -297,16 +297,16 @@ Without refactoring core logic.
 ### Route Matching & Demo
 - **routes.polyline**: Google encoded (precision 5); `sync_challenge_routes_from_wkt` sets it; used for Strava activity matching.
 - **match_activity_to_route_debug**: Diagnostic RPC for overlap and point counts.
-- **Demo mode**: Toggle on landing; see `instructions/DEMO_MODE.md`.
+- **Demo mode**: Supported for testing without Strava API approval; see `instructions/DEMO_MODE.md` (there is no landing-page toggle).
 
 ---
 
 ## Quick Start
 
 1. **Deploy**: `outrun_poc/instructions/DEPLOYMENT_QUICK_START.md` (Supabase + Vercel). Full verification: `FIRST_RUN_CHECKLIST.md`.
-2. **Schema**: New project: run `outrun_poc/supabase/migrations/01_initial_schema.sql`. Existing: run migrations 02–17 as needed.
+2. **Schema**: New project: run `outrun_poc/supabase/migrations/01_initial_schema.sql`. Existing: run migrations 02–19 as needed.
 3. **Env**: `VERCEL_ENV_SETUP.md` (Vercel); Supabase secrets per `SUPABASE_DEPLOYMENT.md`. Set Auth redirect URLs for `/auth/callback` (OAuth + password recovery).
 4. **Auth**: Sign-in is email + password. Sign-up creates account then links Strava. One-off: run `scripts/set-existing-users-password.js` and/or `scripts/sync-auth-email-from-public-users.js` (or Edge Functions) if migrating from Strava-only users; see `outrun_poc/scripts/README.md`.
 5. **Admin**: Set `users.role = 'admin'` in DB for admin access. Upload ticket holders CSV per challenge to gate who can join.
-6. **Demo**: Toggle "Demo Mode" on landing; see `DEMO_MODE.md`.
+6. **Demo**: See `DEMO_MODE.md` for how to enable demo mode (no landing-page toggle).
 7. **Flow & tests**: `APP_FLOW_DIAGRAM.md`; troubleshooting `STRAVA_ERROR_FIX.md`; tests `RUNNING_TESTS.md`. Route debug: `match_activity_to_route_debug(...)` in SQL; see `GPX_TO_ROUTES_PAGE_FLOW.md` and `TEST_STRAVA_RUNS.md`.

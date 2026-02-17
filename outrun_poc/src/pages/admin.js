@@ -545,7 +545,7 @@ export default function AdminPage() {
                 Upload ticket holders (Racepass CSV)
               </Typography>
               <Typography variant="caption" color="text.primary">
-                IMPORTANT COLUMNS: name, email, id_number
+                IMPORTANT COLUMNS: name, email, id_number, type
               </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-end" sx={{ flexWrap: "wrap" }}>
                 <FormControl size="small" sx={{ minWidth: 220 }}>

@@ -123,6 +123,7 @@ create table if not exists public.challenge_ticket_holders (
   email text not null,
   name text,
   id_number text,
+  ticket_type text not null default 'basic',
   source text not null default 'entry_ninja_csv',
   created_at timestamptz not null default now(),
   constraint challenge_ticket_holders_challenge_email_key unique (challenge_id, email)
@@ -131,6 +132,7 @@ create table if not exists public.challenge_ticket_holders (
 create index if not exists idx_challenge_ticket_holders_lookup
   on public.challenge_ticket_holders (challenge_id, email);
 
+comment on column public.challenge_ticket_holders.ticket_type is 'Ticket tier (basic, premium, apex). Used for UI icon display; not used for gating.';
 comment on table public.challenge_ticket_holders is 'Allowed ticket holders per challenge (e.g. Racepass CSV). Used to gate participant creation. Admins (users.role = admin) bypass.';
 
 -- Cron audit trail (when each cron job ran)
@@ -157,13 +159,17 @@ select
   u.full_name,
   u.sex,
   sum(sr.best_time_seconds) as total_time_seconds,
-  count(sr.stage_number) as stages_completed
+  count(sr.stage_number) as stages_completed,
+  th.ticket_type
 from stage_results sr
 join challenges c on c.id = sr.challenge_id and c.is_active = true
 join users u on u.id = sr.user_id
 join participants p on p.user_id = u.id and p.challenge_id = sr.challenge_id
+left join public.challenge_ticket_holders th
+  on th.challenge_id = sr.challenge_id
+ and lower(th.email) = lower(u.email)
 where p.excluded = false
-group by u.id, u.full_name, u.sex;
+group by u.id, u.full_name, u.sex, th.ticket_type;
 
 -- Per-Stage Leaderboard (active challenge only)
 create or replace view leaderboard_stage as
@@ -171,12 +177,16 @@ select
   sr.stage_number,
   u.id as user_id,
   u.full_name,
+  sr.best_time_seconds,
   u.sex,
-  sr.best_time_seconds
+  th.ticket_type
 from stage_results sr
 join challenges c on c.id = sr.challenge_id and c.is_active = true
 join users u on u.id = sr.user_id
 join participants p on p.user_id = u.id and p.challenge_id = sr.challenge_id
+left join public.challenge_ticket_holders th
+  on th.challenge_id = sr.challenge_id
+ and lower(th.email) = lower(u.email)
 where p.excluded = false;
 
 -- ============================================================================

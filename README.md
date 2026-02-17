@@ -31,7 +31,7 @@ This repository represents a **validation-focused MVP / proof of concept**, desi
 
 - **public.users**: `id` (uuid, PK, FK to auth.users), `strava_athlete_id` (unique), `full_name`, `sex`, `created_at`, `email` (unique), `role` (default `'participant'`; set to `'admin'` in DB for admin access), `id_number` (optional, from sign-up). Synced from Supabase Auth.
 - **challenges**: `slug` (unique, not null), one active challenge enforced via partial unique index.
-- **challenge_ticket_holders**: Per-challenge allowlist (challenge_id, email, name, id_number); gates participant creation unless `users.role = 'admin'`. Populated via Admin CSV upload.
+- **challenge_ticket_holders**: Per-challenge allowlist (`challenge_id`, `email`, `name`, `id_number`, `ticket_type`); gates participant creation unless `users.role = 'admin'`. Populated via Admin CSV upload. `ticket_type` is used for leaderboard icons (⚪️ basic, 🟠 premium, ⚫️ apex).
 - **participants, activities, stage_results, routes, audit_logs, strava_tokens, cron_audit_logs**: See `outrun_poc/supabase/migrations/01_initial_schema.sql` (consolidated schema for new projects). Incremental migrations 02–17 exist for existing DBs.
 
 ---
@@ -162,7 +162,7 @@ outrun_poc/
 ## MVP Scope Constraints (Intentional)
 
 * One active challenge at a time (enforced in DB; structure supports multiple later)
-* Ticketing via **challenge_ticket_holders**: Admin uploads CSV (name, email, ID number) per challenge; only listed users (or admins) can join. No in-app payment; purchase is external (e.g. Racepass).
+* Ticketing via **challenge_ticket_holders**: Admin uploads CSV (name, email, ID number, type) per challenge; only listed users (or admins) can join. No in-app payment; purchase is external (e.g. Racepass). Ticket `type` is used for leaderboard icons (⚪️ basic, 🟠 premium, ⚫️ apex).
 * No notifications
 * No manual activity approval 
 * No activity-level edits

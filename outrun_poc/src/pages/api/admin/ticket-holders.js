@@ -1,5 +1,5 @@
 // POST /api/admin/ticket-holders
-// Multipart: challenge_id, file (CSV with Name, email, ID number). Admin only. Upsert into challenge_ticket_holders.
+// Multipart: challenge_id, file (CSV with name, email, id_number, type). Admin only. Upsert into challenge_ticket_holders.
 
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "./requireAdmin";
@@ -32,6 +32,19 @@ function parseCsv(text) {
 
 function normalizeEmail(email) {
   return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
+function normalizeTicketType(value) {
+  const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (!raw) return null;
+  if (raw.includes("apex")) return "apex";
+  if (raw.includes("premium")) return "premium";
+  if (raw.includes("basic")) return "basic";
+  // allow shorthand
+  if (raw === "a") return "apex";
+  if (raw === "p") return "premium";
+  if (raw === "b") return "basic";
+  return null;
 }
 
 export default async function handler(req, res) {
@@ -74,6 +87,7 @@ export default async function handler(req, res) {
   const emailAliases = ["email", "e-mail", "email address"];
   const nameAliases = ["name", "full name", "fullname", "runner"];
   const idNumberAliases = ["rsa id", "rsa id number", "id number", "rsa_id", "id_number"];
+  const typeAliases = ["type", "ticket type", "ticket_type", "tier"];
 
   const findCol = (row, aliases) => {
     const key = Object.keys(row).find((k) => aliases.some((a) => k.includes(a) || a.includes(k)));
@@ -94,17 +108,21 @@ export default async function handler(req, res) {
     }
     const name = (findCol(row, nameAliases) || "").trim() || null;
     const idNumber = (findCol(row, idNumberAliases) || "").trim() || null;
+    const ticketType = normalizeTicketType(findCol(row, typeAliases));
+
+    const upsertRow = {
+      challenge_id: effectiveChallengeId,
+      email,
+      name,
+      id_number: idNumber,
+      source: "racepass_csv",
+    };
+    if (ticketType) upsertRow.ticket_type = ticketType;
 
     const { error } = await supabase
       .from("challenge_ticket_holders")
       .upsert(
-        {
-          challenge_id: effectiveChallengeId,
-          email,
-          name,
-          id_number: idNumber,
-          source: "entry_ninja_csv",
-        },
+        upsertRow,
         { onConflict: "challenge_id,email" }
       );
 

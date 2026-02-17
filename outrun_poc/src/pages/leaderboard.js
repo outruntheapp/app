@@ -68,6 +68,20 @@ export default function LeaderboardPage() {
     return icons.join(" ");
   };
 
+  const getTicketTypeIcon = (ticketType) => {
+    const t = typeof ticketType === "string" ? ticketType.trim().toLowerCase() : "";
+    if (t === "basic") return "⚪️";
+    if (t === "premium") return "🟠";
+    if (t === "apex") return "⚫️";
+    return "";
+  };
+
+  const formatRunnerName = (fullName, ticketType) => {
+    const name = fullName || "Unknown";
+    const icon = getTicketTypeIcon(ticketType);
+    return icon ? `${icon} ${name}` : name;
+  };
+
   const filteredOverall = filterByGender(overallData).sort(
     (a, b) => (a.total_time_seconds || Infinity) - (b.total_time_seconds || Infinity)
   );
@@ -78,7 +92,7 @@ export default function LeaderboardPage() {
       .sort((a, b) => (a.best_time_seconds || Infinity) - (b.best_time_seconds || Infinity))
       .map((row) => ({
         ...row,
-        name: row.full_name || "Unknown",
+        name: formatRunnerName(row.full_name, row.ticket_type),
         time: formatTime(row.best_time_seconds),
       }));
   });
@@ -86,7 +100,7 @@ export default function LeaderboardPage() {
   const overallRows = filteredOverall.map((row, idx) => ({
     ...row,
     rank: idx + 1,
-    name: row.full_name || "Unknown",
+    name: formatRunnerName(row.full_name, row.ticket_type),
     time: formatTime(row.total_time_seconds),
     stagesIcons: getStageIcons(row.stages_completed || 0),
   }));

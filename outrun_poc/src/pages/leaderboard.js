@@ -115,6 +115,9 @@ export default function LeaderboardPage() {
             <Typography variant="h5" gutterBottom>
               Leaderboards
             </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+              Ticket type: ⚪️ Basic • 🟠 Premium • ⚫️ Apex
+            </Typography>
 
             <Tabs
               value={tabValue}

@@ -20,11 +20,20 @@ function formatTime(seconds) {
 
 export default function ParticipantTable({ participants = [], onToggle }) {
   const seenParticipantIds = new Set();
+  const formatTicketType = (ticketType) => {
+    const t = typeof ticketType === "string" ? ticketType.trim().toLowerCase() : "";
+    if (!t) return "—";
+    if (t === "basic") return "⚪️ basic";
+    if (t === "premium") return "🟠 premium";
+    if (t === "apex") return "⚫️ apex";
+    return t;
+  };
   return (
     <Table size="small">
       <TableHead>
         <TableRow>
           <TableCell>Name</TableCell>
+          <TableCell>Type</TableCell>
           <TableCell>Stage</TableCell>
           <TableCell>Time</TableCell>
           <TableCell>Excluded</TableCell>
@@ -38,6 +47,7 @@ export default function ParticipantTable({ participants = [], onToggle }) {
           return (
             <TableRow key={rowKey}>
               <TableCell>{p.name ?? "—"}</TableCell>
+              <TableCell>{formatTicketType(p.ticket_type)}</TableCell>
               <TableCell>{p.stage_number != null ? p.stage_number : "—"}</TableCell>
               <TableCell>{formatTime(p.best_time_seconds)}</TableCell>
               <TableCell>

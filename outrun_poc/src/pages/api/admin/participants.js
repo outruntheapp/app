@@ -37,12 +37,25 @@ export default async function handler(req, res) {
   const userIds = [...new Set(participants.map((p) => p.user_id))];
   const { data: users, error: uErr } = await supabase
     .from("users")
-    .select("id, full_name")
+    .select("id, full_name, email")
     .in("id", userIds);
   if (uErr) {
     return res.status(500).json({ error: uErr.message });
   }
   const userMap = Object.fromEntries((users || []).map((u) => [u.id, u]));
+
+  const { data: ticketHolders, error: thErr } = await supabase
+    .from("challenge_ticket_holders")
+    .select("email, ticket_type")
+    .eq("challenge_id", challengeId);
+  if (thErr) {
+    return res.status(500).json({ error: thErr.message });
+  }
+  const ticketTypeByEmail = Object.fromEntries(
+    (ticketHolders || [])
+      .filter((th) => typeof th.email === "string" && th.email.trim())
+      .map((th) => [th.email.trim().toLowerCase(), th.ticket_type || null])
+  );
 
   const { data: stageResults, error: srErr } = await supabase
     .from("stage_results")
@@ -56,12 +69,18 @@ export default async function handler(req, res) {
   const rows = [];
   for (const p of participants) {
     const name = userMap[p.user_id]?.full_name ?? null;
+    const email = userMap[p.user_id]?.email ?? null;
+    const ticket_type =
+      typeof email === "string" && email.trim()
+        ? ticketTypeByEmail[email.trim().toLowerCase()] ?? null
+        : null;
     const stagesForUser = (stageResults || []).filter((sr) => sr.user_id === p.user_id);
     if (stagesForUser.length === 0) {
       rows.push({
         participant_id: p.id,
         user_id: p.user_id,
         name: name ?? "—",
+        ticket_type,
         excluded: !!p.excluded,
         stage_number: null,
         best_time_seconds: null,
@@ -72,6 +91,7 @@ export default async function handler(req, res) {
           participant_id: p.id,
           user_id: p.user_id,
           name: name ?? "—",
+          ticket_type,
           excluded: !!p.excluded,
           stage_number: sr.stage_number,
           best_time_seconds: sr.best_time_seconds,

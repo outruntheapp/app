@@ -1,4 +1,4 @@
-﻿name;email;id_number
-Madri Chalmers;madrichalmers@gmail.com;9,60103E+12
-Anrike Rust;anrikedutoit@gmail.com;9,60108E+12
-JP Rust;janpetrusrust@gmail.com;9,40723E+12
+﻿name;email;id_number;type
+Madri Chalmers;madrichalmers@gmail.com;9,60103E+12;apex
+Anrike Rust;anrikedutoit@gmail.com;9,60108E+12;basic
+JP Rust;janpetrusrust@gmail.com;9,40723E+12;premium
